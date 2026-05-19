@@ -8,9 +8,9 @@ export function EventHeader() {
       sx={{
         p: { xs: 2, md: 3 },
         mb: 2,
-        backgroundColor: '#111113',
-        color: 'white',
-        border: '1px solid #27272a',
+        backgroundColor: '#f4f4f5',
+        color: '#0a0a0a',
+        border: '1px solid #d4d4d8',
         borderRadius: 2,
         overflow: 'hidden'
       }}
@@ -24,7 +24,7 @@ export function EventHeader() {
             flexShrink: 0,
             borderRadius: 2,
             overflow: 'hidden',
-            background: 'linear-gradient(135deg, #18181b 0%, #7c3aed 100%)',
+            background: 'linear-gradient(135deg, #e4e4e7 0%, #7c3aed 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

@@ -31,12 +31,12 @@ const RESERVATION_SECONDS = 10 * 60;
 
 const theme = createTheme({
   palette: {
-    mode: 'dark',
-    primary: { main: '#a855f7' },
-    secondary: { main: '#7c3aed' },
-    background: { default: '#050507', paper: '#111113' },
-    text: { primary: '#f5f5f5', secondary: '#a1a1aa' },
-    divider: '#27272a',
+    mode: 'light',
+    primary: { main: '#7c3aed' },
+    secondary: { main: '#a855f7' },
+    background: { default: '#ffffff', paper: '#fafafa' },
+    text: { primary: '#0a0a0a', secondary: '#52525b' },
+    divider: '#e4e4e7',
   },
   typography: {
     fontFamily: 'Inter, Roboto, Helvetica, Arial, sans-serif',
@@ -88,30 +88,30 @@ function CartDrawer({
 
   return (
     <Drawer anchor="right" open={open} onClose={onClose}>
-      <Box sx={{ width: { xs: '100vw', sm: 430 }, p: 2, bgcolor: '#0b0b0f', minHeight: '100%', color: 'white' }}>
+      <Box sx={{ width: { xs: '100vw', sm: 430 }, p: 2, bgcolor: '#fafafa', minHeight: '100%', color: '#0a0a0a' }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
           <Box>
             <Typography variant="h6">Mini-cart</Typography>
             {secondsLeft !== null && (
-              <Stack direction="row" spacing={0.75} alignItems="center" color="#c4b5fd">
+              <Stack direction="row" spacing={0.75} alignItems="center" color="#7c3aed">
                 <TimerOutlined fontSize="small" />
                 <Typography variant="caption">Reserved for {formatTimer(secondsLeft)}</Typography>
               </Stack>
             )}
           </Box>
-          <IconButton onClick={onClose} aria-label="Close cart" sx={{ color: 'white' }}>
+          <IconButton onClick={onClose} aria-label="Close cart" sx={{ color: '#0a0a0a' }}>
             <Close />
           </IconButton>
         </Stack>
 
         {selectedSeats.length === 0 ? (
-          <Paper variant="outlined" sx={{ p: 3, textAlign: 'center', bgcolor: '#18181b', borderColor: '#27272a' }}>
+          <Paper variant="outlined" sx={{ p: 3, textAlign: 'center', bgcolor: '#e4e4e7', borderColor: '#d4d4d8' }}>
             <Typography color="text.secondary">No seats selected yet. Browse the map freely — the timer starts only after a ticket is reserved.</Typography>
           </Paper>
         ) : (
           <Stack spacing={1.5}>
             {selectedSeats.map((seat) => (
-              <Paper key={seat.id} variant="outlined" sx={{ p: 1.5, bgcolor: '#18181b', borderColor: '#27272a' }}>
+              <Paper key={seat.id} variant="outlined" sx={{ p: 1.5, bgcolor: '#e4e4e7', borderColor: '#d4d4d8' }}>
                 <Stack direction="row" justifyContent="space-between" spacing={1}>
                   <Box>
                     <Typography fontWeight={800}>{getSeatLabel(seat)}</Typography>
@@ -167,7 +167,7 @@ export default function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Box sx={{ minHeight: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', bgcolor: 'background.default', overflow: 'hidden' }}>
-        <AppBar position="sticky" elevation={0} sx={{ bgcolor: 'rgba(5,5,7,0.92)', backdropFilter: 'blur(16px)', borderBottom: '1px solid #27272a' }}>
+        <AppBar position="sticky" elevation={0} sx={{ bgcolor: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(16px)', borderBottom: '1px solid #d4d4d8', color: '#0a0a0a' }}>
           <Toolbar>
             {isMobile && (
               <IconButton edge="start" color="inherit" aria-label="Open menu" sx={{ mr: 1 }}>
@@ -178,7 +178,7 @@ export default function App() {
               TicketPro Map Lab
             </Typography>
             {secondsLeft !== null && !isMobile && (
-              <Chip icon={<TimerOutlined />} label={`Reserved for ${formatTimer(secondsLeft)}`} sx={{ mr: 2, bgcolor: '#18181b', color: '#c4b5fd', border: '1px solid #7c3aed' }} />
+              <Chip icon={<TimerOutlined />} label={`Reserved for ${formatTimer(secondsLeft)}`} sx={{ mr: 2, bgcolor: '#e4e4e7', color: '#7c3aed', border: '1px solid #7c3aed' }} />
             )}
             {!isMobile && selectedSeats.length > 0 && (
               <Typography variant="body2" sx={{ mr: 2, fontWeight: 800 }}>
@@ -191,25 +191,25 @@ export default function App() {
               </Badge>
             </IconButton>
           </Toolbar>
-          {secondsLeft !== null && <LinearProgress variant="determinate" value={progress} sx={{ height: 3, bgcolor: '#27272a', '& .MuiLinearProgress-bar': { bgcolor: '#a855f7' } }} />}
+          {secondsLeft !== null && <LinearProgress variant="determinate" value={progress} sx={{ height: 3, bgcolor: '#d4d4d8', '& .MuiLinearProgress-bar': { bgcolor: '#a855f7' } }} />}
         </AppBar>
 
         <Box component="main" sx={{ flex: 1, overflow: 'auto', p: { xs: 1, md: 2 }, pb: { xs: selectedSeats.length > 0 ? 11 : 2, md: 2 } }}>
           <Container maxWidth="xl" disableGutters={isMobile} sx={{ minHeight: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
             <EventHeader />
             <TicketTypeSelector />
-            <Paper elevation={0} sx={{ flex: 1, minHeight: { xs: 680, md: 760 }, position: 'relative', overflow: 'hidden', border: '1px solid #27272a', bgcolor: '#0b0b0f' }}>
+            <Paper elevation={0} sx={{ flex: 1, minHeight: { xs: 680, md: 760 }, position: 'relative', overflow: 'hidden', border: '1px solid #d4d4d8', bgcolor: '#fafafa' }}>
               <VenueMap selectedSeats={selectedSeats} onSelectionChange={setSelectedSeats} />
             </Paper>
           </Container>
         </Box>
 
         {isMobile && selectedSeats.length > 0 && (
-          <Paper elevation={12} sx={{ position: 'fixed', left: 8, right: 8, bottom: 8, zIndex: theme.zIndex.drawer - 1, p: 1.5, borderRadius: 4, bgcolor: '#18181b', border: '1px solid #7c3aed' }}>
+          <Paper elevation={12} sx={{ position: 'fixed', left: 8, right: 8, bottom: 8, zIndex: theme.zIndex.drawer - 1, p: 1.5, borderRadius: 4, bgcolor: '#e4e4e7', border: '1px solid #7c3aed' }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
               <Box>
                 <Typography fontWeight={900}>{selectedSeats.length} selected · {selectedTotal} PLN</Typography>
-                {secondsLeft !== null && <Typography variant="body2" color="#c4b5fd">Reserved for {formatTimer(secondsLeft)}</Typography>}
+                {secondsLeft !== null && <Typography variant="body2" color="#7c3aed">Reserved for {formatTimer(secondsLeft)}</Typography>}
               </Box>
               <Button variant="contained" onClick={() => setCartOpen(true)} sx={{ bgcolor: '#7c3aed' }}>
                 Cart

@@ -27,7 +27,7 @@ export function Minimap({ currentView, zoom, pan }: MinimapProps) {
         sx={{
           width: '100%',
           height: '100%',
-          backgroundColor: '#f5f5f5',
+          backgroundColor: '#0a0a0a',
           position: 'relative'
         }}
       >

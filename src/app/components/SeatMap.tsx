@@ -375,7 +375,7 @@ export function SeatMap() {
           height: '100%',
           overflow: 'hidden',
           cursor: isDragging ? 'grabbing' : 'grab',
-          backgroundColor: '#f5f5f5',
+          backgroundColor: '#0a0a0a',
           position: 'relative',
           touchAction: 'none'
         }}

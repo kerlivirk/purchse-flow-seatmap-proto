@@ -406,7 +406,7 @@ export function ListView({ onSectorClick, selectedSeats, filters }: ListViewProp
                                 sx={{
                                   width: '100%',
                                   height: 8,
-                                  backgroundColor: '#f5f5f5',
+                                  backgroundColor: '#0a0a0a',
                                   borderRadius: 2,
                                   overflow: 'hidden',
                                   position: 'relative',

@@ -63,9 +63,9 @@ export function TicketTypeSelector() {
       sx={{
         p: { xs: 2, md: 3 },
         mb: 2,
-        backgroundColor: '#111113',
-        color: 'white',
-        border: '1px solid #27272a',
+        backgroundColor: '#f4f4f5',
+        color: '#0a0a0a',
+        border: '1px solid #d4d4d8',
         borderRadius: 2
       }}
     >
@@ -107,8 +107,8 @@ export function TicketTypeSelector() {
             }
             onClick={() => setSelectedType(type.id)}
             sx={{
-              backgroundColor: selectedType === type.id ? type.color : '#18181b',
-              color: 'white',
+              backgroundColor: selectedType === type.id ? type.color : '#e4e4e7',
+              color: selectedType === type.id ? 'white' : '#0a0a0a',
               px: 2,
               py: 3,
               fontSize: '0.875rem',
@@ -116,7 +116,7 @@ export function TicketTypeSelector() {
               cursor: 'pointer',
               transition: 'all 0.2s',
               '&:hover': {
-                backgroundColor: selectedType === type.id ? type.color : '#27272a',
+                backgroundColor: selectedType === type.id ? type.color : '#d4d4d8',
                 transform: 'translateY(-2px)',
                 boxShadow: 2
               },
