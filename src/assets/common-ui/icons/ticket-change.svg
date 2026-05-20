@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg">
+  <g id="ticketChange" fill="none">
+    <path d="M5 10.5V13.5H2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M5 13.25C5 13.25 0.5 11 0.5 7C0.5 2 5 0.5 5 0.5" stroke="currentColor"
+      stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M9 3.5V0.5H12" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M9 0.75C9 0.75 12.384 2.44202 13.2829 5.5" stroke="currentColor" stroke-linecap="round"
+      stroke-linejoin="round"/>
+    <path
+      d="M9.37903 12.865C9.54744 13.0334 9.80785 13.046 9.96069 12.8931L13.3931 9.46069C13.546 9.30785 13.5334 9.04744 13.365 8.87903L12.804 8.31808C12.5128 8.47533 12.122 8.41445 11.8538 8.14619C11.5855 7.87794 11.5247 7.48719 11.6819 7.19599L11.121 6.63504C10.9526 6.46664 10.6921 6.45402 10.5393 6.60686L7.10686 10.0393C6.95402 10.1921 6.96664 10.4526 7.13504 10.621L7.69472 11.1806C7.9865 11.0196 8.38054 11.0795 8.65052 11.3495C8.9205 11.6195 8.98044 12.0135 8.81936 12.3053L9.37903 12.865Z"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

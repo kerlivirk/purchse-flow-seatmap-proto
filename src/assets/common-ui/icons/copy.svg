@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg">
+  <g id="copy" fill="none">
+    <path
+      d="M13 12V4.5C13 3.94772 12.5523 3.5 12 3.5H4.5C3.94772 3.5 3.5 3.94772 3.5 4.5V12C3.5 12.5523 3.94772 13 4.5 13H12C12.5523 13 13 12.5523 13 12Z"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M9.5 1H8.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M5 1H6" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M1 2.5V2C1 1.44772 1.44772 1 2 1H2.5" stroke="currentColor" stroke-linecap="round"
+      stroke-linejoin="round"/>
+    <path d="M1 5V6" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M1 9.5V8.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

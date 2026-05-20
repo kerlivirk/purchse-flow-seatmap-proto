@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg">
+  <g id="emailResend" fill="none">
+    <path d="M10 8.5C11.3807 8.5 12.5 9.61929 12.5 11V12.5" stroke="currentColor"
+      stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M10 13.5C8.61929 13.5 7.5 12.3807 7.5 11V9.5" stroke="currentColor"
+      stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M6.5 10.5L7.5 9.5L8.5 10.5" stroke="currentColor" stroke-linecap="round"
+      stroke-linejoin="round"/>
+    <path d="M11.5 11.5L12.5 12.5L13.5 11.5" stroke="currentColor" stroke-linecap="round"
+      stroke-linejoin="round"/>
+    <path d="M0.5 2L6.5 6L12.5 2" stroke="currentColor" stroke-linecap="round"
+      stroke-linejoin="round"/>
+    <path
+      d="M4.5 9.5H1.5C0.947715 9.5 0.5 9.05228 0.5 8.5V1.5C0.5 0.947715 0.947715 0.5 1.5 0.5H11.5C12.0523 0.5 12.5 0.947715 12.5 1.5V7"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

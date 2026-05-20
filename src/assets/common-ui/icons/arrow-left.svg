@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg">
+  <g id="arrowLeft" fill="none">
+    <path
+      d="M9.99993 0.5L3.85348 6.64645C3.65822 6.84171 3.65822 7.15829 3.85348 7.35355L9.99993 13.5"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg">
+  <g id="download" fill="none">
+    <path
+      d="M1.5 11.5C1.5 12.0304 1.71071 12.5391 2.08579 12.9142C2.46086 13.2893 2.96957 13.5 3.5 13.5H10.5C11.0304 13.5 11.5391 13.2893 11.9142 12.9142C12.2893 12.5391 12.5 12.0304 12.5 11.5"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M4.5 7L7 9.5L9.5 7" stroke="currentColor" stroke-linecap="round"
+      stroke-linejoin="round"/>
+    <path d="M7 9.5V0.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

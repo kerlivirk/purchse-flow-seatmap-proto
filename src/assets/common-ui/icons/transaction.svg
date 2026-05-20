@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg">
+  <g id="transaction" fill="none">
+    <path d="M11 1.5L13.5 4L11 6.5" stroke="currentColor" stroke-linecap="round"
+      stroke-linejoin="round"/>
+    <path d="M3 7.5L0.5 10L3 12.5" stroke="currentColor" stroke-linecap="round"
+      stroke-linejoin="round"/>
+    <path d="M0.5 10H13.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M13.5 4H0.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

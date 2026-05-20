@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg">
+  <g id="cardView" fill="none">
+    <path d="M2 0.5L2 5.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M7 0.5L7 5.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M12 0.5V5.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M2 8.5V13.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M7 8.5V13.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M12 8.5V13.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

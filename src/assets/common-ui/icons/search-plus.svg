@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="0 0 14 15" xmlns="http://www.w3.org/2000/svg">
+  <g id="searchPlus" fill="none">
+    <path
+      d="M11.5 7C11.5 10.0376 9.03757 12.5 6 12.5C2.96243 12.5 0.5 10.0376 0.5 7C0.5 3.96243 2.96243 1.5 6 1.5"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M13.5016 14.5001L9.89062 10.8892" stroke="currentColor" stroke-linecap="round"
+      stroke-linejoin="round"/>
+    <path d="M8.94922 1.3999V6.8999" stroke="currentColor" stroke-linecap="round"
+      stroke-linejoin="round"/>
+    <path d="M6.19922 4.1499H11.6992" stroke="currentColor" stroke-linecap="round"
+      stroke-linejoin="round"/>
+  </g>
+</svg>

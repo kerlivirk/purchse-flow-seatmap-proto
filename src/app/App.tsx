@@ -19,12 +19,14 @@ import {
   createTheme,
   useMediaQuery,
 } from '@mui/material';
-import { Close, ShoppingCart, TimerOutlined } from '@mui/icons-material';
+import { Close, TimerOutlined } from '@mui/icons-material';
 
 import { EventHeader } from './components/EventHeader';
 import { TicketTypeSelector } from './components/TicketTypeSelector';
 import { VenueMap, DEFAULT_FILTERS } from './components/VenueMap';
 import { ReferenceGallery } from './components/ReferenceGallery';
+import { M3Button } from './components/M3Button';
+import { Icon } from './components/Icon';
 import type { SelectedSeat, VenueFilters } from './components/VenueMap';
 
 const RESERVATION_SECONDS = 10 * 60;
@@ -32,21 +34,29 @@ const RESERVATION_SECONDS = 10 * 60;
 const theme = createTheme({
   palette: {
     mode: 'light',
-    primary: { main: '#7c3aed' },
-    secondary: { main: '#a855f7' },
-    background: { default: '#ffffff', paper: '#fafafa' },
-    text: { primary: '#0a0a0a', secondary: '#52525b' },
-    divider: '#e4e4e7',
+    primary: { main: '#06d373', contrastText: '#11002b' },
+    secondary: { main: '#9d85d0' },
+    background: { default: '#f8f8fa', paper: '#ffffff' },
+    text: { primary: '#11002b', secondary: '#5a5062' },
+    divider: '#e9e7ed',
+    error: { main: '#ff0032' },
+    warning: { main: '#efb100' },
   },
   typography: {
-    fontFamily: 'Inter, Roboto, Helvetica, Arial, sans-serif',
-    h6: { fontWeight: 800 },
+    fontFamily: 'Mulish, "Helvetica Neue", Arial, sans-serif',
+    h1: { fontFamily: '"Panel Sans", Mulish, sans-serif', fontWeight: 900 },
+    h2: { fontFamily: '"Panel Sans", Mulish, sans-serif', fontWeight: 900 },
+    h3: { fontFamily: '"Panel Sans", Mulish, sans-serif', fontWeight: 900 },
+    h4: { fontFamily: '"Panel Sans", Mulish, sans-serif', fontWeight: 900 },
+    h5: { fontFamily: 'Mulish, sans-serif', fontWeight: 700 },
+    h6: { fontFamily: 'Mulish, sans-serif', fontWeight: 700 },
+    button: { textTransform: 'none', fontWeight: 700, letterSpacing: '0.1px' },
   },
-  shape: { borderRadius: 16 },
+  shape: { borderRadius: 8 },
   components: {
     MuiButton: {
       styleOverrides: {
-        root: { textTransform: 'none', borderRadius: 999, fontWeight: 800 },
+        root: { textTransform: 'none', borderRadius: 100, fontWeight: 700 },
       },
     },
     MuiPaper: {
@@ -93,7 +103,7 @@ function CartDrawer({
           <Box>
             <Typography variant="h6">Mini-cart</Typography>
             {secondsLeft !== null && (
-              <Stack direction="row" spacing={0.75} alignItems="center" color="#7c3aed">
+              <Stack direction="row" spacing={0.75} alignItems="center" color="#19633d">
                 <TimerOutlined fontSize="small" />
                 <Typography variant="caption">Reserved for {formatTimer(secondsLeft)}</Typography>
               </Stack>
@@ -105,13 +115,13 @@ function CartDrawer({
         </Stack>
 
         {selectedSeats.length === 0 ? (
-          <Paper variant="outlined" sx={{ p: 3, textAlign: 'center', bgcolor: '#e4e4e7', borderColor: '#d4d4d8' }}>
+          <Paper variant="outlined" sx={{ p: 3, textAlign: 'center', bgcolor: '#ffffff', borderColor: '#e9e7ed' }}>
             <Typography color="text.secondary">No seats selected yet. Browse the map freely — the timer starts only after a ticket is reserved.</Typography>
           </Paper>
         ) : (
           <Stack spacing={1.5}>
             {selectedSeats.map((seat) => (
-              <Paper key={seat.id} variant="outlined" sx={{ p: 1.5, bgcolor: '#e4e4e7', borderColor: '#d4d4d8' }}>
+              <Paper key={seat.id} variant="outlined" sx={{ p: 1.5, bgcolor: '#ffffff', borderColor: '#e9e7ed' }}>
                 <Stack direction="row" justifyContent="space-between" spacing={1}>
                   <Box>
                     <Typography fontWeight={800}>{getSeatLabel(seat)}</Typography>
@@ -131,9 +141,9 @@ function CartDrawer({
               <Typography fontWeight={900}>Total</Typography>
               <Typography fontWeight={900} color="primary.main">{total} PLN</Typography>
             </Stack>
-            <Button variant="contained" size="large" fullWidth sx={{ bgcolor: '#7c3aed' }}>
+            <M3Button buttonType="accent" size="md" fullWidth>
               Continue to checkout
-            </Button>
+            </M3Button>
           </Stack>
         )}
       </Box>
@@ -174,10 +184,10 @@ export default function App() {
               TicketPro Map Lab
             </Typography>
             {secondsLeft !== null && isMobile && (
-              <Chip icon={<TimerOutlined />} label={formatTimer(secondsLeft)} size="small" sx={{ mr: 1, bgcolor: '#e4e4e7', color: '#7c3aed', border: '1px solid #7c3aed', fontWeight: 800 }} />
+              <Chip icon={<TimerOutlined />} label={formatTimer(secondsLeft)} size="small" sx={{ mr: 1, bgcolor: '#ddfbea', color: '#19633d', border: '1px solid #06d373', fontWeight: 800 }} />
             )}
             {secondsLeft !== null && !isMobile && (
-              <Chip icon={<TimerOutlined />} label={`Reserved for ${formatTimer(secondsLeft)}`} sx={{ mr: 2, bgcolor: '#e4e4e7', color: '#7c3aed', border: '1px solid #7c3aed' }} />
+              <Chip icon={<TimerOutlined />} label={`Reserved for ${formatTimer(secondsLeft)}`} sx={{ mr: 2, bgcolor: '#ddfbea', color: '#19633d', border: '1px solid #06d373' }} />
             )}
             {!isMobile && selectedSeats.length > 0 && (
               <Typography variant="body2" sx={{ mr: 2, fontWeight: 800 }}>
@@ -186,7 +196,7 @@ export default function App() {
             )}
             <IconButton color="inherit" aria-label="Open selected tickets" onClick={() => setCartOpen(true)}>
               <Badge badgeContent={selectedSeats.length} color="primary">
-                <ShoppingCart />
+                <Icon name="shopping-cart-1" size={22} color="#11002b" />
               </Badge>
             </IconButton>
           </Toolbar>
@@ -196,23 +206,25 @@ export default function App() {
         <Box component="main" sx={{ flex: 1, overflow: 'auto', p: { xs: 1, md: 2 }, pb: { xs: selectedSeats.length > 0 ? 11 : 2, md: 2 } }}>
           <Container maxWidth="xl" disableGutters={isMobile} sx={{ minHeight: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
             <EventHeader />
-            <TicketTypeSelector filters={filters} onFiltersChange={setFilters} />
-            <Paper elevation={0} sx={{ height: { xs: 680, md: 760 }, position: 'relative', overflow: 'hidden', border: '1px solid #d4d4d8', bgcolor: '#fafafa' }}>
-              <VenueMap selectedSeats={selectedSeats} onSelectionChange={setSelectedSeats} filters={filters} onFiltersChange={setFilters} />
+            <Paper elevation={0} sx={{ border: '1px solid #e9e7ed', borderRadius: 2, overflow: 'hidden', bgcolor: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+              <TicketTypeSelector filters={filters} onFiltersChange={setFilters} />
+              <Box sx={{ height: { xs: 680, md: 760 }, position: 'relative', borderTop: '1px solid #e9e7ed', bgcolor: '#ffffff', overflow: 'hidden' }}>
+                <VenueMap selectedSeats={selectedSeats} onSelectionChange={setSelectedSeats} filters={filters} onFiltersChange={setFilters} />
+              </Box>
             </Paper>
           </Container>
         </Box>
 
         {isMobile && selectedSeats.length > 0 && (
-          <Paper elevation={12} sx={{ position: 'fixed', left: 8, right: 8, bottom: 8, zIndex: theme.zIndex.drawer - 1, p: 1.5, borderRadius: 4, bgcolor: '#e4e4e7', border: '1px solid #7c3aed' }}>
+          <Paper elevation={2} sx={{ position: 'fixed', left: 8, right: 8, bottom: 8, zIndex: theme.zIndex.drawer - 1, p: 1.5, borderRadius: 2, bgcolor: '#ffffff', border: '1px solid #06d373' }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
               <Box>
                 <Typography fontWeight={900}>{selectedSeats.length} selected · {selectedTotal} PLN</Typography>
-                {secondsLeft !== null && <Typography variant="body2" color="#7c3aed">Reserved for {formatTimer(secondsLeft)}</Typography>}
+                {secondsLeft !== null && <Typography variant="body2" color="#19633d">Reserved for {formatTimer(secondsLeft)}</Typography>}
               </Box>
-              <Button variant="contained" onClick={() => setCartOpen(true)} sx={{ bgcolor: '#7c3aed' }}>
+              <M3Button buttonType="accent" size="sm" onClick={() => setCartOpen(true)}>
                 Cart
-              </Button>
+              </M3Button>
             </Stack>
           </Paper>
         )}

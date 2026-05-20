@@ -1,16 +1,17 @@
-import { Box, Paper, Typography, Chip } from '@mui/material';
-import { Event, Place, AccessTime, ConfirmationNumber, TheaterComedy } from '@mui/icons-material';
+import { Box, Paper, Typography } from '@mui/material';
+import phantomPoster from '../../assets/phantom-poster.png';
+import { M3Chip } from './M3Chip';
+import { Icon } from './Icon';
 
 export function EventHeader() {
   return (
     <Paper
-      elevation={2}
+      elevation={0}
       sx={{
         p: { xs: 2, md: 3 },
-        mb: 2,
-        backgroundColor: '#f4f4f5',
-        color: '#0a0a0a',
-        border: '1px solid #d4d4d8',
+        backgroundColor: '#ffffff',
+        color: '#11002b',
+        border: '1px solid #e9e7ed',
         borderRadius: 2,
         overflow: 'hidden'
       }}
@@ -18,55 +19,26 @@ export function EventHeader() {
       <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', md: 'row' } }}>
         {/* Event Poster */}
         <Box
+          component="img"
+          src={phantomPoster}
+          alt="Phantom of the Opera — Prezero Arena Gliwice"
           sx={{
-            width: { xs: '100%', md: 200 },
-            height: { xs: 150, md: 250 },
+            width: { xs: '100%', md: 280 },
+            height: { xs: 'auto', md: 250 },
             flexShrink: 0,
             borderRadius: 2,
-            overflow: 'hidden',
-            background: 'linear-gradient(135deg, #e4e4e7 0%, #7c3aed 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            position: 'relative'
+            objectFit: 'cover',
+            display: 'block',
+            border: '1px solid #e9e7ed',
           }}
-        >
-          <TheaterComedy sx={{ fontSize: 80, color: 'rgba(255,255,255,0.3)' }} />
-          <Typography
-            sx={{
-              position: 'absolute',
-              bottom: 16,
-              left: 16,
-              right: 16,
-              color: 'white',
-              fontWeight: 700,
-              fontSize: '1.1rem',
-              textAlign: 'center',
-              textShadow: '0 2px 4px rgba(0,0,0,0.3)'
-            }}
-          >
-            PHANTOM
-          </Typography>
-        </Box>
+        />
 
         {/* Event Details */}
         <Box sx={{ flex: 1 }}>
-          <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-            <Chip
-              label="Musical"
-              size="small"
-              sx={{ backgroundColor: '#7c3aed', color: 'white' }}
-            />
-            <Chip
-              label="18+"
-              size="small"
-              sx={{ backgroundColor: '#3f3f46', color: 'white' }}
-            />
-            <Chip
-              label="English"
-              size="small"
-              variant="outlined"
-            />
+          <Box sx={{ display: 'flex', gap: 0.75, mb: 2, flexWrap: 'wrap' }}>
+            <M3Chip label="Musical" size="sm" style="filled" />
+            <M3Chip label="18+" size="sm" style="filled" />
+            <M3Chip label="English" size="sm" style="outlined" />
           </Box>
 
           <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
@@ -79,7 +51,7 @@ export function EventHeader() {
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Place sx={{ fontSize: 20, color: 'primary.main' }} />
+              <Icon name="location-pin-1" size={20} color="#06d373" />
               <Box>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
                   Gliwice Arena
@@ -91,7 +63,7 @@ export function EventHeader() {
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Event sx={{ fontSize: 20, color: 'primary.main' }} />
+              <Icon name="blank-calendar" size={20} color="#06d373" />
               <Box>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
                   Friday, May 29, 2026
@@ -103,7 +75,7 @@ export function EventHeader() {
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <AccessTime sx={{ fontSize: 20, color: 'primary.main' }} />
+              <Icon name="circle-clock" size={20} color="#06d373" />
               <Box>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
                   19:00 - 22:00
@@ -115,7 +87,7 @@ export function EventHeader() {
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <ConfirmationNumber sx={{ fontSize: 20, color: 'primary.main' }} />
+              <Icon name="ticket-extra" size={20} color="#06d373" />
               <Box>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
                   290 tickets remaining

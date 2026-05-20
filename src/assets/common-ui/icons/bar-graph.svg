@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg">
+  <g id="barGraph" fill="none">
+    <path d="M3.57814 12.9998L3.57812 4.34082H6.21876V12.9998H3.57814Z" stroke="currentColor"
+      stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M11.5 12.9998V6.93457H8.85938V12.9998H11.5Z" stroke="currentColor"
+      stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M8.85938 13V1H6.21875V13H8.85938Z" stroke="currentColor" stroke-linecap="round"
+      stroke-linejoin="round"/>
+    <path d="M13 13H1V1" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

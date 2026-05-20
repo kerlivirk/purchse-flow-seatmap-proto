@@ -1,0 +1,18 @@
+{
+  "name": "@piletilevi/common-ui-assets",
+  "version": "0.9.0",
+  "description": "PLG moments common ui assets",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Piletilevi/common-ui-assets.git"
+  },
+  "files": [
+    "fonts/",
+    "icons/",
+    "logo/",
+    "styles/"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
+  }
+}

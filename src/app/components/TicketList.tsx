@@ -1,14 +1,15 @@
 import { useMemo, useState } from 'react';
-import { Box, Button, Chip, IconButton, Paper, Stack, Tooltip, Typography } from '@mui/material';
+import { Box, Chip, IconButton, Paper, Stack, Tooltip, Typography } from '@mui/material';
 import {
   Accessible,
   AutoAwesome,
-  ConfirmationNumber,
   ExpandLess,
   ExpandMore,
   WarningAmber,
 } from '@mui/icons-material';
 import type { PriceCategory, Seat, Sector } from './VenueMap';
+import { M3Button } from './M3Button';
+import { Icon } from './Icon';
 
 interface TicketListProps {
   sector: Sector | null;
@@ -122,7 +123,7 @@ export function TicketList({
       <Box sx={{ px: { xs: 1.25, md: 2 }, py: { xs: 1, md: 1.5 }, borderBottom: '1px solid #d4d4d8', bgcolor: '#fafafa', flexShrink: 0 }}>
         <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between" sx={{ mb: onBestInSection ? 1 : 0 }}>
           <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0 }}>
-            <ConfirmationNumber fontSize="small" sx={{ color: '#7c3aed' }} />
+            <Icon name="ticket-extra" size={20} color="#06d373" />
             <Typography fontWeight={900} noWrap>{sector?.name ?? 'Tickets'}</Typography>
           </Stack>
           <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
@@ -133,16 +134,17 @@ export function TicketList({
           <Stack direction="row" spacing={0.75} alignItems="center">
             <Typography variant="caption" sx={{ fontWeight: 800, color: '#52525b' }}>Best in section:</Typography>
             {[1, 2, 4].map((n) => (
-              <Button
+              <M3Button
                 key={n}
-                size="small"
-                variant="outlined"
+                size="xs"
+                buttonType="outlined"
+                rounded={false}
                 onClick={() => onBestInSection(n)}
                 startIcon={n === 1 ? undefined : <AutoAwesome sx={{ fontSize: 14 }} />}
-                sx={{ minWidth: 0, px: 1, py: 0.25, fontSize: 11, borderColor: '#d4d4d8', color: '#52525b', '&:hover': { borderColor: '#7c3aed', color: '#7c3aed', bgcolor: '#f5f3ff' } }}
+                sx={{ minWidth: 0 }}
               >
                 {n}
-              </Button>
+              </M3Button>
             ))}
           </Stack>
         )}
@@ -187,7 +189,7 @@ export function TicketList({
                       <Chip
                         label={`${selectedInRow} selected`}
                         size="small"
-                        sx={{ height: 18, fontSize: 10, fontWeight: 800, bgcolor: '#7c3aed', color: 'white', '& .MuiChip-label': { px: 0.75 } }}
+                        sx={{ height: 18, fontSize: 10, fontWeight: 800, bgcolor: '#06d373', color: '#11002b', '& .MuiChip-label': { px: 0.75 } }}
                       />
                     )}
                     {group.resaleCount > 0 && (
@@ -197,7 +199,7 @@ export function TicketList({
                         sx={{ height: 18, fontSize: 10, fontWeight: 800, bgcolor: resaleColor, color: 'white', '& .MuiChip-label': { px: 0.75 } }}
                       />
                     )}
-                    {group.accessibleCount > 0 && <Accessible sx={{ fontSize: 14, color: '#7c3aed' }} />}
+                    {group.accessibleCount > 0 && <Accessible sx={{ fontSize: 14, color: '#06d373' }} />}
                   </Stack>
                   <Typography variant="caption" color="text.secondary">
                     {group.minPrice === group.maxPrice
@@ -214,7 +216,7 @@ export function TicketList({
                       onClick={(e) => { e.stopPropagation(); reserveBestInRow(group, 2); }}
                       disabled={group.count - selectedInRow < 2}
                       sx={{
-                        color: '#7c3aed',
+                        color: '#06d373',
                         '&:hover': { bgcolor: '#f5f3ff' },
                         '&.Mui-disabled': { color: '#d4d4d8' },
                       }}
@@ -258,27 +260,19 @@ export function TicketList({
                                 sx={{ height: 15, fontSize: 9, fontWeight: 800, bgcolor: resaleColor, color: 'white', '& .MuiChip-label': { px: 0.5 } }}
                               />
                             )}
-                            {seat.accessible && <Accessible sx={{ fontSize: 12, color: '#7c3aed' }} />}
+                            {seat.accessible && <Accessible sx={{ fontSize: 12, color: '#06d373' }} />}
                             {seat.limitedView && <WarningAmber sx={{ fontSize: 12, color: '#f59e0b' }} />}
                           </Stack>
                         </Box>
                         <Typography fontWeight={800} fontSize={13}>{seat.price} PLN</Typography>
-                        <Button
-                          size="small"
-                          variant={selected ? 'outlined' : 'contained'}
+                        <M3Button
+                          size="xs"
+                          buttonType={selected ? 'outlined' : 'accent'}
                           onClick={() => onReserve(seat)}
-                          sx={{
-                            minWidth: 56,
-                            py: 0.1,
-                            fontSize: 11,
-                            bgcolor: selected ? 'transparent' : '#7c3aed',
-                            borderColor: selected ? '#7c3aed' : undefined,
-                            color: selected ? '#7c3aed' : 'white',
-                            '&:hover': { bgcolor: selected ? '#f5f3ff' : '#6d28d9' },
-                          }}
+                          sx={{ minWidth: 64 }}
                         >
                           {selected ? 'Remove' : 'Select'}
-                        </Button>
+                        </M3Button>
                       </Stack>
                     );
                   })}

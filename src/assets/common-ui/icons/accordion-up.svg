@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg">
+  <g id="accordionUp" fill="none">
+    <path
+      d="M0.5 7.49993L6.64645 1.35348C6.84171 1.15822 7.15829 1.15822 7.35355 1.35348L13.5 7.49993"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <path
+      d="M0.5 12.4999L6.64645 6.35348C6.84171 6.15822 7.15829 6.15822 7.35355 6.35348L13.5 12.4999"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg">
+  <g id="bellAlert" fill="none">
+    <path
+      d="M11 5.5C12.3807 5.5 13.5 4.38071 13.5 3C13.5 1.61929 12.3807 0.5 11 0.5C9.61929 0.5 8.5 1.61929 8.5 3C8.5 4.38071 9.61929 5.5 11 5.5Z"
+      fill="#FF0032"/>
+    <path d="M5 13.5H7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <path
+      d="M6 2C4.93913 2 3.92172 2.42143 3.17157 3.17157C2.42143 3.92172 2 4.93913 2 6V9.5C2 9.89782 1.84196 10.2794 1.56066 10.5607C1.27936 10.842 0.897825 11 0.5 11H11.5C11.1022 11 10.7206 10.842 10.4393 10.5607C10.158 10.2794 10 9.89782 10 9.5V7.5"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

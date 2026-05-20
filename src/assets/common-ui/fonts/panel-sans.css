@@ -1,0 +1,10 @@
+@font-face {
+  font-family: 'Panel Sans';
+  font-weight: 900;
+  font-style: normal;
+  src: url('panel-sans/panel-sans-black.eot') format('embedded-opentype');
+  src: local(''),
+  url('panel-sans/panel-sans-black.eot?#iefix') format('embedded-opentype'),
+  url('panel-sans/panel-sans-black.otf') format('truetype'),
+  url('panel-sans/panel-sans-black.woff2') format('woff2')
+}

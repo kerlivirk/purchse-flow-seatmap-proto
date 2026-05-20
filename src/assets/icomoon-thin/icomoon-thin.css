@@ -1,0 +1,208 @@
+/* 184 icons */
+@font-face {
+  font-family: 'Streamline Thin';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('./fonts/streamline-thin.woff2') format('woff2'),
+       url('./fonts/streamline-thin.woff') format('woff'),
+       url('./fonts/streamline-thin.ttf') format('truetype');
+}
+
+.sti {
+  font-family: "Streamline Thin";
+  font-style: normal;
+  font-weight: 400;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  display: inline-block;
+  speak: none;
+}
+
+.sti-ticket-extra::before { content: "\e900"; }
+.sti-download-tray::before { content: "\e901"; }
+.sti-button-stop::before { content: "\e902"; }
+.sti-line-arrow-synchronize-2::before { content: "\e903"; }
+.sti-star-1::before { content: "\e904"; }
+.sti-line-arrow-move-right-large-4::before { content: "\e905"; }
+.sti-block-1::before { content: "\e906"; }
+.sti-circle::before { content: "\e907"; }
+.sti-user-circle-single::before { content: "\e908"; }
+.sti-gift-2::before { content: "\e909"; }
+.sti-line-arrow-transfer-horizontal-2::before { content: "\e90a"; }
+.sti-circle-solid::before { content: "\e90b"; }
+.sti-toilet-man::before { content: "\e90c"; }
+.sti-chair-3::before { content: "\e90d"; }
+.sti-end-point-none::before { content: "\e90e"; }
+.sti-bring-to-front::before { content: "\e90f"; }
+.sti-delete-1::before { content: "\e910"; }
+.sti-send-to-back::before { content: "\e911"; }
+.sti-add-1::before { content: "\e912"; }
+.sti-user-multiple-group::before { content: "\e913"; }
+.sti-location-pin-1::before { content: "\e914"; }
+.sti-user-setting-bolt-nut::before { content: "\e915"; }
+.sti-warning-triangle::before { content: "\e916"; }
+.sti-arrow-sync-lock1::before { content: "\e917"; }
+.sti-shopping-cart-1::before { content: "\e918"; }
+.sti-user-group::before { content: "\e919"; }
+.sti-cog-1::before { content: "\e91a"; }
+.sti-user-full-body-add-plus-icon::before { content: "\e91b"; }
+.sti-arrow-update-disable::before { content: "\e91c"; }
+.sti-arrows-cycle::before { content: "\e91d"; }
+.sti-mail-send-email-message::before { content: "\e91e"; }
+.sti-qr-code::before { content: "\e91f"; }
+.sti-dashboard-square::before { content: "\e920"; }
+.sti-double-tailless-line-arrow-left::before { content: "\e921"; }
+.sti-double-tailless-line-arrow-down::before { content: "\e922"; }
+.sti-user-single-neutral::before { content: "\e923"; }
+.sti-user-add-plus::before { content: "\e924"; }
+.sti-arrows-sync-settings-nut::before { content: "\e925"; }
+.sti-warning-circle::before { content: "\e926"; }
+.sti-arrow-cursor-2::before { content: "\e927"; }
+.sti-information-circle::before { content: "\e928"; }
+.sti-check-circle::before { content: "\e929"; }
+.sti-home-2::before { content: "\e92a"; }
+.sti-web::before { content: "\e92b"; }
+.sti-cloud::before { content: "\e92c"; }
+.sti-focus-center-square::before { content: "\e92d"; }
+.sti-printer::before { content: "\e92e"; }
+.sti-chat-bubble-text-oval::before { content: "\e92f"; }
+.sti-link-chain::before { content: "\e930"; }
+.sti-invisible-1::before { content: "\e931"; }
+.sti-new-file::before { content: "\e932"; }
+.sti-curly-brackets::before { content: "\e933"; }
+.sti-file-pdf::before { content: "\e934"; }
+.sti-code-bracket::before { content: "\e935"; }
+.sti-template-theme-design-layout::before { content: "\e936"; }
+.sti-visible::before { content: "\e937"; }
+.sti-translate-text::before { content: "\e938"; }
+.sti-bag-suitcase-2::before { content: "\e939"; }
+.sti-copy-1::before { content: "\e93a"; }
+.sti-house-key-access::before { content: "\e93b"; }
+.sti-calendar-add::before { content: "\e93c"; }
+.sti-hamburger-menu-1::before { content: "\e93d"; }
+.sti-thumbnail-view::before { content: "\e93e"; }
+.sti-thumbnail-view-2::before { content: "\e93f"; }
+.sti-layers-1::before { content: "\e940"; }
+.sti-pie-chart::before { content: "\e941"; }
+.sti-tilted-line::before { content: "\e942"; }
+.sti-floppy-disk::before { content: "\e943"; }
+.sti-dashboard-3::before { content: "\e944"; }
+.sti-hierarchy-10::before { content: "\e945"; }
+.sti-triangle::before { content: "\e946"; }
+.sti-triangle-arrow-align-from-center::before { content: "\e947"; }
+.sti-image::before { content: "\e948"; }
+.sti-store::before { content: "\e949"; }
+.sti-discount-percent-alternate::before { content: "\e94a"; }
+.sti-download-tray1::before { content: "\e94b"; }
+.sti-crop-selection::before { content: "\e94c"; }
+.sti-ringing-bell-notification::before { content: "\e94d"; }
+.sti-shopping-bag::before { content: "\e94e"; }
+.sti-bar-bottom-panel-close::before { content: "\e94f"; }
+.sti-bar-bottom-panel-open::before { content: "\e950"; }
+.sti-bar-sidebar-left-panel-open::before { content: "\e951"; }
+.sti-column-pillar-building-historical-column-travel-places::before { content: "\e952"; }
+.sti-link-share-2::before { content: "\e953"; }
+.sti-bell-notification-alert-bell-ring-notification-alarm::before { content: "\e954"; }
+.sti-archive-box::before { content: "\e955"; }
+.sti-search-plus::before { content: "\e956"; }
+.sti-mail-loading::before { content: "\e957"; }
+.sti-magnifying-glass::before { content: "\e958"; }
+.sti-triangle-arrow-rotate-left-5::before { content: "\e959"; }
+.sti-ticket-1::before { content: "\e95a"; }
+.sti-ticket-info::before { content: "\e95b"; }
+.sti-recycle-bin-2::before { content: "\e95c"; }
+.sti-mail-send-envelope::before { content: "\e95d"; }
+.sti-chart-column::before { content: "\e95e"; }
+.sti-double-tailless-line-arrow-right::before { content: "\e95f"; }
+.sti-calendar-money-due-payment-icon::before { content: "\e960"; }
+.sti-text-file::before { content: "\e961"; }
+.sti-double-tailless-line-arrow-up::before { content: "\e962"; }
+.sti-vertical-menu::before { content: "\e963"; }
+.sti-calendar-add1::before { content: "\e964"; }
+.sti-calendar-check::before { content: "\e965"; }
+.sti-text-style::before { content: "\e966"; }
+.sti-blank-calendar::before { content: "\e967"; }
+.sti-pencil::before { content: "\e968"; }
+.sti-fit-screen-streamline-core::before { content: "\e969"; }
+.sti-circle-clock::before { content: "\e96a"; }
+.sti-arrow-sync-ticket::before { content: "\e96b"; }
+.sti-arrow-sync-lock::before { content: "\e96c"; }
+.sti-horizontal-slider-2::before { content: "\e96d"; }
+.sti-inbox::before { content: "\e96e"; }
+.sti-send::before { content: "\e96f"; }
+.sti-heart::before { content: "\e970"; }
+.sti-trash::before { content: "\e971"; }
+.sti-folder::before { content: "\e972"; }
+.sti-check-calendar::before { content: "\e973"; }
+.sti-pin-dollar::before { content: "\e974"; }
+.sti-user::before { content: "\e975"; }
+.sti-bar-sidebar-right-panel-open::before { content: "\e976"; }
+.sti-bar-top-panel-close::before { content: "\e977"; }
+.sti-bar-top-panel-open::before { content: "\e978"; }
+.sti-chart-profit-growth-skyrocketing::before { content: "\e979"; }
+.sti-location-pin-money-atm-3::before { content: "\e97a"; }
+.sti-mail-send-email-message1::before { content: "\e97b"; }
+.sti-calendar-money-due-payment-2::before { content: "\e97c"; }
+.sti-events::before { content: "\e97d"; }
+.sti-globe::before { content: "\e97e"; }
+.sti-tag::before { content: "\e97f"; }
+.sti-ticket::before { content: "\e980"; }
+.sti-data::before { content: "\e981"; }
+.sti-user-target::before { content: "\e982"; }
+.sti-recycle-bin-10::before { content: "\e983"; }
+.sti-line-arrow-move-down-5::before { content: "\e984"; }
+.sti-check::before { content: "\e985"; }
+.sti-tailless-line-arrow-up-5::before { content: "\e986"; }
+.sti-tailless-line-arrow-right-5::before { content: "\e987"; }
+.sti-tailless-line-arrow-left-5::before { content: "\e988"; }
+.sti-arrows-sync-settings::before { content: "\e989"; }
+.sti-tailless-line-arrow-down-5::before { content: "\e98a"; }
+.sti-line-arrow-rotate-all-axis-left::before { content: "\e98b"; }
+.sti-line-arrow-rotate-diagonal-left-7::before { content: "\e98c"; }
+.sti-line-arrow-rotate-diagonal-left-8::before { content: "\e98d"; }
+.sti-line-arrow-rotate-diagonal-right-7::before { content: "\e98e"; }
+.sti-line-arrow-rotate-diagonal-right-8::before { content: "\e98f"; }
+.sti-line-arrow-rotate-horizontal-left::before { content: "\e990"; }
+.sti-line-arrow-rotate-horizontal-right::before { content: "\e991"; }
+.sti-line-arrow-rotate-left-16::before { content: "\e992"; }
+.sti-line-arrow-rotate-left-17::before { content: "\e993"; }
+.sti-line-arrow-rotate-left-18::before { content: "\e994"; }
+.sti-line-arrow-rotate-left-19::before { content: "\e995"; }
+.sti-line-arrow-rotate-left-20::before { content: "\e996"; }
+.sti-line-arrow-rotate-right-16::before { content: "\e997"; }
+.sti-line-arrow-rotate-right-17::before { content: "\e998"; }
+.sti-line-arrow-rotate-right-18::before { content: "\e999"; }
+.sti-line-arrow-rotate-right-19::before { content: "\e99a"; }
+.sti-line-arrow-rotate-right-20::before { content: "\e99b"; }
+.sti-line-arrow-rotate-vertical-left-7::before { content: "\e99c"; }
+.sti-line-arrow-rotate-vertical-left-8::before { content: "\e99d"; }
+.sti-line-arrow-rotate-vertical-right-7::before { content: "\e99e"; }
+.sti-line-arrow-rotate-vertical-right-8::before { content: "\e99f"; }
+.sti-line-arrow-synchronize-7::before { content: "\e9a0"; }
+.sti-line-arrow-synchronize-8::before { content: "\e9a1"; }
+.sti-line-arrow-synchronize-disable::before { content: "\e9a2"; }
+.sti-line-arrow-synchronize-warning::before { content: "\e9a3"; }
+.sti-update-syncronize-finish::before { content: "\e9a4"; }
+.sti-calendar-event-streamline-core-3::before { content: "\e9a5"; }
+.sti-filter-text::before { content: "\e9a6"; }
+.sti-multiple-file-7::before { content: "\e9a7"; }
+.sti-shopping-bag-hand-bag-price-tag::before { content: "\e9a8"; }
+.sti-block-10::before { content: "\e9a9"; }
+.sti-delete-circle::before { content: "\e9aa"; }
+.sti-delete-square::before { content: "\e9ab"; }
+.sti-check-circle1::before { content: "\e9ac"; }
+.sti-time-lapse::before { content: "\e9ad"; }
+.sti-few-tickets::before { content: "\e9ae"; }
+.sti-tag-small::before { content: "\e9af"; }
+.sti-disable-tag::before { content: "\e9b0"; }
+.sti-disable-tag-small::before { content: "\e9b1"; }
+.sti-arrow-align-move-down-bottom::before { content: "\e9b2"; }
+.sti-arrow-align-move-up-top::before { content: "\e9b3"; }
+.sti-fastforward-clock::before { content: "\e9b4"; }
+.sti-draft::before { content: "\e9b5"; }
+.sti-hide-object::before { content: "\e9b6"; }
+.sti-invisible-7::before { content: "\e9b7"; }

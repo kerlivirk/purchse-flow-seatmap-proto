@@ -1,6 +1,8 @@
-import { Box, Chip, Typography, Paper, Stack, IconButton, Tooltip } from '@mui/material';
-import { ConfirmationNumber, Star, Weekend, Accessible, FilterAltOff } from '@mui/icons-material';
+import { Box, Typography, Stack, IconButton, Tooltip } from '@mui/material';
+import { FilterAltOff } from '@mui/icons-material';
 import type { PriceCategory, VenueFilters } from './VenueMap';
+import { M3Chip } from './M3Chip';
+import { Icon } from './Icon';
 
 interface TicketType {
   id: PriceCategory | 'accessible' | 'ga';
@@ -12,12 +14,12 @@ interface TicketType {
 }
 
 const ticketTypes: TicketType[] = [
-  { id: 'vip', name: 'VIP', price: '299 PLN', color: '#a855f7', icon: <Star />, available: 24 },
-  { id: 'premium', name: 'Premium', price: '199 PLN', color: '#7c3aed', icon: <Weekend />, available: 48 },
-  { id: 'standard', name: 'Standard', price: '149 PLN', color: '#6b7280', icon: <ConfirmationNumber />, available: 120 },
-  { id: 'balcony', name: 'Balcony', price: '99 PLN', color: '#9ca3af', icon: <ConfirmationNumber />, available: 86 },
-  { id: 'ga', name: 'Standing GA', price: '79 PLN', color: '#4b5563', icon: <ConfirmationNumber />, available: 156 },
-  { id: 'accessible', name: 'Accessible', price: '149 PLN', color: '#c084fc', icon: <Accessible />, available: 12 },
+  { id: 'vip', name: 'VIP', price: '299 PLN', color: '#a855f7', icon: <Icon name="star-1" size={16} />, available: 24 },
+  { id: 'premium', name: 'Premium', price: '199 PLN', color: '#7c3aed', icon: <Icon name="gift-2" size={16} />, available: 48 },
+  { id: 'standard', name: 'Standard', price: '149 PLN', color: '#6b7280', icon: <Icon name="chair-3" size={16} />, available: 120 },
+  { id: 'balcony', name: 'Balcony', price: '99 PLN', color: '#9ca3af', icon: <Icon name="few-tickets" size={16} />, available: 86 },
+  { id: 'ga', name: 'Standing GA', price: '79 PLN', color: '#4b5563', icon: <Icon name="user-multiple-group" size={16} />, available: 156 },
+  { id: 'accessible', name: 'Accessible', price: '149 PLN', color: '#c084fc', icon: <Icon name="house-key-access" size={16} />, available: 12 },
 ];
 
 const ALL_CATEGORIES: PriceCategory[] = ['vip', 'premium', 'standard', 'balcony', 'ga'];
@@ -55,15 +57,11 @@ export function TicketTypeSelector({ filters, onFiltersChange }: TicketTypeSelec
     onFiltersChange({ ...filters, categories: ALL_CATEGORIES, accessibleOnly: false });
 
   return (
-    <Paper
-      elevation={2}
+    <Box
       sx={{
-        p: { xs: 1.5, md: 3 },
-        mb: 2,
-        backgroundColor: '#f4f4f5',
-        color: '#0a0a0a',
-        border: '1px solid #d4d4d8',
-        borderRadius: 2,
+        p: { xs: 1.5, md: 2.5 },
+        backgroundColor: '#ffffff',
+        color: '#11002b',
       }}
     >
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
@@ -72,62 +70,47 @@ export function TicketTypeSelector({ filters, onFiltersChange }: TicketTypeSelec
         </Typography>
         {!allCategoriesSelected && (
           <Tooltip title="Show all ticket types">
-            <IconButton size="small" onClick={resetAll} sx={{ color: '#7c3aed' }}>
+            <IconButton size="small" onClick={resetAll} sx={{ color: '#06d373' }}>
               <FilterAltOff fontSize="small" />
             </IconButton>
           </Tooltip>
         )}
       </Stack>
 
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: { xs: 0.75, md: 1.5 } }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: { xs: 0.75, md: 1 } }}>
         {ticketTypes.map((type) => {
           const active = isActive(type, filters);
           return (
-            <Chip
+            <M3Chip
               key={type.id}
-              icon={<Box sx={{ display: 'flex', alignItems: 'center', ml: 1 }}>{type.icon}</Box>}
+              size="md"
+              selected={active}
+              leadingIcon={<Box sx={{ display: 'flex', alignItems: 'center', color: active ? '#ffffff' : '#11002b' }}>{type.icon}</Box>}
+              onClick={() => handleClick(type)}
               label={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, md: 1 }, py: 0.25 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 700, fontSize: { xs: 12, md: 14 } }}>
-                    {type.name}
-                  </Typography>
-                  <Typography variant="caption" sx={{ opacity: 0.85, fontSize: { xs: 10, md: 12 } }}>
-                    {type.price}
-                  </Typography>
-                  <Typography
-                    variant="caption"
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.75, md: 1 } }}>
+                  <Box component="span" sx={{ fontWeight: 800, fontSize: { xs: 12, md: 14 } }}>{type.name}</Box>
+                  <Box component="span" sx={{ opacity: 0.7, fontWeight: 600, fontSize: { xs: 10, md: 12 } }}>{type.price}</Box>
+                  <Box
+                    component="span"
                     sx={{
-                      backgroundColor: active ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.08)',
+                      bgcolor: active ? 'rgba(255,255,255,0.18)' : '#f4f2f5',
+                      color: active ? '#ffffff' : '#5a5062',
                       px: 0.75,
                       py: 0.1,
                       borderRadius: 1,
                       fontSize: { xs: 9, md: 11 },
+                      fontWeight: 700,
                     }}
                   >
                     {type.available} left
-                  </Typography>
+                  </Box>
                 </Box>
               }
-              onClick={() => handleClick(type)}
-              sx={{
-                backgroundColor: active ? type.color : '#e4e4e7',
-                color: active ? 'white' : '#0a0a0a',
-                px: { xs: 1, md: 2 },
-                py: { xs: 2, md: 3 },
-                fontSize: '0.875rem',
-                fontWeight: 500,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                '&:hover': {
-                  backgroundColor: active ? type.color : '#d4d4d8',
-                  transform: 'translateY(-1px)',
-                },
-                '& .MuiChip-icon': { color: 'inherit' },
-              }}
             />
           );
         })}
       </Box>
-    </Paper>
+    </Box>
   );
 }

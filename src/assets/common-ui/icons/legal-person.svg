@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg">
+  <g id="legalPerson" fill="none">
+    <path
+      d="M7 4C7.9665 4 8.75 3.2165 8.75 2.25C8.75 1.2835 7.9665 0.5 7 0.5C6.0335 0.5 5.25 1.2835 5.25 2.25C5.25 3.2165 6.0335 4 7 4Z"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <path
+      d="M3.5 9.25H5L5.5 13.5H8.5L9 9.25H10.5V7.5C10.5 5.567 8.933 4 7 4C5.067 4 3.5 5.567 3.5 7.5V9.25Z"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

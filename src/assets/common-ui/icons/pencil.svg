@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg">
+  <g id="pencil" fill="none">
+    <path
+      d="M1.5 8.5L0.5 13.5L5.5 12.5L13.207 4.79289C13.5976 4.40237 13.5976 3.7692 13.207 3.37868L10.6212 0.792893C10.2307 0.402369 9.59756 0.402369 9.20703 0.792894L1.5 8.5Z"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

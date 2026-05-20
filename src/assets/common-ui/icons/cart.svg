@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg">
+  <g id="cart" fill="none">
+    <path
+      d="M10.9453 13.5C10.6692 13.5 10.4453 13.2761 10.4453 13C10.4453 12.7239 10.6692 12.5 10.9453 12.5C11.2215 12.5 11.4453 12.7239 11.4453 13C11.4453 13.2761 11.2215 13.5 10.9453 13.5Z"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <path
+      d="M4.44531 13.5C4.16917 13.5 3.94531 13.2761 3.94531 13C3.94531 12.7239 4.16917 12.5 4.44531 12.5C4.72146 12.5 4.94531 12.7239 4.94531 13C4.94531 13.2761 4.72146 13.5 4.44531 13.5Z"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <path
+      d="M0.5 0.5H3.00584L3.26961 3M3.26961 3L3.91371 9.10468C3.96741 9.61363 4.39758 10 4.91054 10H11.2443C11.7042 10 12.1051 9.6877 12.2167 9.24254L13.4696 4.24254C13.6277 3.61139 13.1493 3 12.4972 3H3.26961Z"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

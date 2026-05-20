@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg">
+  <g id="ticketInfo" fill="none">
+    <path
+      d="M0.5 11.3247C0.5 11.9738 0.977563 12.5 1.56666 12.5H12.4333C13.0224 12.5 13.5 11.9738 13.5 11.3247V9.16254C12.6357 8.90438 12 8.03399 12 7C12 5.96601 12.6357 5.09562 13.5 4.83746V2.67529C13.5 2.0262 13.0224 1.5 12.4333 1.5H1.56666C0.977563 1.5 0.5 2.0262 0.5 2.67529V4.83257C1.37276 5.08445 2.01666 5.95937 2.01666 7C2.01666 8.04063 1.37276 8.91555 0.5 9.16743V11.3247Z"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M6 6.5H7V9.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M5.5 9.5H8.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M7 4.5C6.8619 4.5 6.75 4.38807 6.75 4.25C6.75 4.11193 6.8619 4 7 4"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M7 4.5C7.1381 4.5 7.25 4.38807 7.25 4.25C7.25 4.11193 7.1381 4 7 4"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

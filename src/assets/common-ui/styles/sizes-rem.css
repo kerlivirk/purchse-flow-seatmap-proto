@@ -1,0 +1,37 @@
+:root {
+  --container-modal-320: 20rem;
+  --container-mobile: 23.4375rem;
+  --container-modal-640: 40rem;
+  --container-modal-960: 60rem;
+  --container-1400: 87.5rem;
+  --container-1680: 105rem;
+  --radius-0: 0rem;
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+  --radius-4xl: 2.5rem;
+  --radius-999: 6250000rem;
+  --space-0: 0rem;
+  --space-xs: 0.25rem;
+  --space-sm: 0.375rem;
+  --space-md: 0.5rem;
+  --space-lg: 0.625rem;
+  --space-xl: 0.75rem;
+  --space-2xl: 1rem;
+  --space-3xl: 1.25rem;
+  --space-4xl: 1.5rem;
+  --space-5xl: 2rem;
+  --space-6xl: 2.5rem;
+  --space-7xl: 3rem;
+  --space-8xl: 4rem;
+  --space-9xl: 5rem;
+  --space-10xl: 7.5rem;
+  --space-11xl: 10rem;
+  --stroke-sm: 0.0625rem;
+  --stroke-md: 0.0781rem;
+  --stroke-xl: 0.0938rem;
+}

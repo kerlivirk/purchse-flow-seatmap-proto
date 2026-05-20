@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg">
+  <g id="bellNotification" fill="none">
+    <path d="M6 13.5H8" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <path
+      d="M11 6.25C11 5.18913 10.5786 4.17172 9.82843 3.42157C9.07828 2.67143 8.06087 2.25 7 2.25C5.93913 2.25 4.92172 2.67143 4.17157 3.42157C3.42143 4.17172 3 5.18913 3 6.25V9.75C3 10.1478 2.84196 10.5294 2.56066 10.8107C2.27936 11.092 1.89782 11.25 1.5 11.25H12.5C12.1022 11.25 11.7206 11.092 11.4393 10.8107C11.158 10.5294 11 10.1478 11 9.75V6.25Z"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <path
+      d="M0.5 5.37C0.500539 4.41814 0.727534 3.48007 1.16224 2.63327C1.59694 1.78647 2.22687 1.05525 3 0.5"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <path
+      d="M13.5 5.37C13.4995 4.41814 13.2725 3.48007 12.8378 2.63327C12.4031 1.78647 11.7731 1.05525 11 0.5"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

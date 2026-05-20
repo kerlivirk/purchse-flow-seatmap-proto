@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg">
+  <g id="crop" fill="none">
+    <path
+      d="M6.5 3.5H9.5C9.76522 3.5 10.0196 3.60536 10.2071 3.79289C10.3946 3.98043 10.5 4.23478 10.5 4.5V7.5"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <path
+      d="M3.5 0.5V9.5C3.5 9.76522 3.60536 10.0196 3.79289 10.2071C3.98043 10.3946 4.23478 10.5 4.5 10.5H13.5"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M3.5 3.5H0.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M10.5 10.5V13.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

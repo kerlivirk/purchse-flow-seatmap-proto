@@ -1,0 +1,10 @@
+@font-face {
+  font-family: 'Freigeist';
+  font-weight: 700;
+  font-style: normal;
+  src: url('freigeist/freigeist-bold.eot') format('embedded-opentype');
+  src: local(''),
+  url('freigeist/freigeist-bold.eot?#iefix') format('embedded-opentype'),
+  url('freigeist/freigeist-bold.otf') format('truetype'),
+  url('freigeist/freigeist-bold.woff2') format('woff2')
+}
