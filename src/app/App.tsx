@@ -19,13 +19,13 @@ import {
   createTheme,
   useMediaQuery,
 } from '@mui/material';
-import { Close, Menu as MenuIcon, ShoppingCart, TimerOutlined } from '@mui/icons-material';
+import { Close, ShoppingCart, TimerOutlined } from '@mui/icons-material';
 
 import { EventHeader } from './components/EventHeader';
 import { TicketTypeSelector } from './components/TicketTypeSelector';
-import { VenueMap } from './components/VenueMap';
+import { VenueMap, DEFAULT_FILTERS } from './components/VenueMap';
 import { ReferenceGallery } from './components/ReferenceGallery';
-import type { SelectedSeat } from './components/VenueMap';
+import type { SelectedSeat, VenueFilters } from './components/VenueMap';
 
 const RESERVATION_SECONDS = 10 * 60;
 
@@ -147,6 +147,7 @@ export default function App() {
   const [cartOpen, setCartOpen] = useState(false);
   const [timerStartedAt, setTimerStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
+  const [filters, setFilters] = useState<VenueFilters>(DEFAULT_FILTERS);
 
   const selectedTotal = useMemo(() => selectedSeats.reduce((sum, seat) => sum + seat.price, 0), [selectedSeats]);
 
@@ -168,15 +169,13 @@ export default function App() {
       <CssBaseline />
       <Box sx={{ minHeight: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', bgcolor: 'background.default', overflow: 'hidden' }}>
         <AppBar position="sticky" elevation={0} sx={{ bgcolor: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(16px)', borderBottom: '1px solid #d4d4d8', color: '#0a0a0a' }}>
-          <Toolbar>
-            {isMobile && (
-              <IconButton edge="start" color="inherit" aria-label="Open menu" sx={{ mr: 1 }}>
-                <MenuIcon />
-              </IconButton>
-            )}
-            <Typography variant="h6" component="h1" sx={{ flexGrow: 1, letterSpacing: -0.5 }}>
+          <Toolbar sx={{ minHeight: { xs: 52, md: 64 }, px: { xs: 1.5, md: 3 } }}>
+            <Typography variant="h6" component="h1" sx={{ flexGrow: 1, letterSpacing: -0.5, fontSize: { xs: 16, md: 20 } }}>
               TicketPro Map Lab
             </Typography>
+            {secondsLeft !== null && isMobile && (
+              <Chip icon={<TimerOutlined />} label={formatTimer(secondsLeft)} size="small" sx={{ mr: 1, bgcolor: '#e4e4e7', color: '#7c3aed', border: '1px solid #7c3aed', fontWeight: 800 }} />
+            )}
             {secondsLeft !== null && !isMobile && (
               <Chip icon={<TimerOutlined />} label={`Reserved for ${formatTimer(secondsLeft)}`} sx={{ mr: 2, bgcolor: '#e4e4e7', color: '#7c3aed', border: '1px solid #7c3aed' }} />
             )}
@@ -197,9 +196,9 @@ export default function App() {
         <Box component="main" sx={{ flex: 1, overflow: 'auto', p: { xs: 1, md: 2 }, pb: { xs: selectedSeats.length > 0 ? 11 : 2, md: 2 } }}>
           <Container maxWidth="xl" disableGutters={isMobile} sx={{ minHeight: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
             <EventHeader />
-            <TicketTypeSelector />
+            <TicketTypeSelector filters={filters} onFiltersChange={setFilters} />
             <Paper elevation={0} sx={{ height: { xs: 680, md: 760 }, position: 'relative', overflow: 'hidden', border: '1px solid #d4d4d8', bgcolor: '#fafafa' }}>
-              <VenueMap selectedSeats={selectedSeats} onSelectionChange={setSelectedSeats} />
+              <VenueMap selectedSeats={selectedSeats} onSelectionChange={setSelectedSeats} filters={filters} onFiltersChange={setFilters} />
             </Paper>
           </Container>
         </Box>

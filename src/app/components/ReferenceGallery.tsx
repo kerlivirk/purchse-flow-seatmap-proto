@@ -28,6 +28,7 @@ export function ReferenceGallery() {
           zIndex: 1000,
           backgroundColor: 'primary.main',
           color: 'white',
+          display: { xs: 'none', md: 'inline-flex' },
           '&:hover': {
             backgroundColor: 'primary.dark',
           },

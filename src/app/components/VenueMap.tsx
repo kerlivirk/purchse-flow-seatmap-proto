@@ -30,6 +30,7 @@ import {
   Accessible,
   ArrowBack,
   AutoAwesome,
+  Close,
   ConfirmationNumber,
   FilterList,
   Fullscreen,
@@ -93,9 +94,27 @@ export interface SelectedSeat extends Seat {
   selectedCategoryLabel?: string;
 }
 
+export interface VenueFilters {
+  priceRange: [number, number];
+  categories: PriceCategory[];
+  accessibleOnly: boolean;
+  adjacentOnly: boolean;
+  hideLimitedView: boolean;
+}
+
+export const DEFAULT_FILTERS: VenueFilters = {
+  priceRange: [0, 320],
+  categories: ['vip', 'premium', 'standard', 'balcony', 'ga'],
+  accessibleOnly: false,
+  adjacentOnly: false,
+  hideLimitedView: false,
+};
+
 interface VenueMapProps {
   selectedSeats?: SelectedSeat[];
   onSelectionChange?: (seats: SelectedSeat[]) => void;
+  filters: VenueFilters;
+  onFiltersChange: (next: VenueFilters) => void;
 }
 
 const colors: Record<PriceCategory, string> = {
@@ -171,7 +190,7 @@ function formatTimer(seconds: number) {
   return `${minutes}:${rest}`;
 }
 
-export function VenueMap({ selectedSeats = [], onSelectionChange }: VenueMapProps) {
+export function VenueMap({ selectedSeats = [], onSelectionChange, filters, onFiltersChange }: VenueMapProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [view, setView] = useState<'overview' | 'pure' | 'detail'>('overview');
@@ -188,13 +207,9 @@ export function VenueMap({ selectedSeats = [], onSelectionChange }: VenueMapProp
   const [failedSeats, setFailedSeats] = useState<string[]>([]);
   const [snackbar, setSnackbar] = useState('');
   const [categorySeat, setCategorySeat] = useState<SelectedSeat | null>(null);
-  const [filters, setFilters] = useState({
-    priceRange: [0, 320] as [number, number],
-    categories: ['vip', 'premium', 'standard', 'balcony', 'ga'] as PriceCategory[],
-    accessibleOnly: false,
-    adjacentOnly: false,
-    hideLimitedView: false,
-  });
+  const setFilters = (next: VenueFilters | ((prev: VenueFilters) => VenueFilters)) => {
+    onFiltersChange(typeof next === 'function' ? next(filters) : next);
+  };
 
   const seats = useMemo(() => (selectedSector ? generateSeats(selectedSector) : []), [selectedSector]);
   const selectedIds = new Set(selectedSeats.map((seat) => seat.id));
@@ -382,6 +397,32 @@ export function VenueMap({ selectedSeats = [], onSelectionChange }: VenueMapProp
     setCategorySeat({ ...categorySeat, price: cat.price, selectedCategory: cat.id, selectedCategoryLabel: cat.label });
   };
 
+  const renderFilterPanel = () => (
+    <>
+      <Typography fontWeight={900} sx={{ mb: 2 }}>Filters & access</Typography>
+      <Typography variant="body2" sx={{ mb: 1 }}>Price range</Typography>
+      <Slider value={filters.priceRange} min={0} max={320} valueLabelDisplay="auto" onChange={(_, value) => setFilters({ ...filters, priceRange: value as [number, number] })} sx={{ color: '#a855f7' }} />
+      <Typography variant="caption" color="#a1a1aa">{filters.priceRange[0]}–{filters.priceRange[1]} PLN</Typography>
+      <Divider sx={{ my: 2, borderColor: '#d4d4d8' }} />
+      {(['vip', 'premium', 'standard', 'balcony', 'ga'] as PriceCategory[]).map((cat) => (
+        <FormControlLabel key={cat} control={<Checkbox checked={filters.categories.includes(cat)} onChange={() => setFilters({ ...filters, categories: filters.categories.includes(cat) ? filters.categories.filter((c) => c !== cat) : [...filters.categories, cat] })} sx={{ color: '#71717a', '&.Mui-checked': { color: colors[cat] } }} />} label={cat.toUpperCase()} />
+      ))}
+      <FormControlLabel control={<Checkbox checked={filters.accessibleOnly} onChange={(e) => setFilters({ ...filters, accessibleOnly: e.target.checked })} sx={{ color: '#71717a', '&.Mui-checked': { color: '#a855f7' } }} />} label="Accessible only" />
+      <FormControlLabel control={<Checkbox checked={filters.adjacentOnly} onChange={(e) => setFilters({ ...filters, adjacentOnly: e.target.checked })} sx={{ color: '#71717a', '&.Mui-checked': { color: '#a855f7' } }} />} label="Only adjacent seats" />
+      <FormControlLabel control={<Checkbox checked={filters.hideLimitedView} onChange={(e) => setFilters({ ...filters, hideLimitedView: e.target.checked })} sx={{ color: '#71717a', '&.Mui-checked': { color: '#a855f7' } }} />} label="Hide limited view" />
+      <Divider sx={{ my: 2, borderColor: '#d4d4d8' }} />
+      <Typography fontWeight={800} sx={{ mb: 1 }}>Sector access code</Typography>
+      <Stack direction="row" spacing={1}>
+        <TextField size="small" placeholder="Crew code" value={accessCode} onChange={(e) => setAccessCode(e.target.value)} InputProps={{ sx: { color: '#0a0a0a' } }} />
+        <Button onClick={applyAccessCode} variant="contained" sx={{ bgcolor: '#7c3aed' }}><LockOpen /></Button>
+      </Stack>
+      <Typography variant="caption" color="#a1a1aa">Prototype codes: CREW, PRESS, PHANTOM</Typography>
+      <Divider sx={{ my: 2, borderColor: '#d4d4d8' }} />
+      <Typography fontWeight={800} sx={{ mb: 1 }}>Legend</Typography>
+      {[['Available', '#a855f7'], ['Selected', '#f5f3ff'], ['Sold/locked', '#52525b'], ['Loading', '#c084fc']].map(([label, color]) => <Stack key={label} direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}><Box sx={{ width: 13, height: 13, borderRadius: '50%', bgcolor: color }} /><Typography variant="caption">{label}</Typography></Stack>)}
+    </>
+  );
+
   const renderOverview = () => (
     <svg width="100%" height="100%" viewBox="0 0 900 720">
       <defs>
@@ -543,9 +584,9 @@ export function VenueMap({ selectedSeats = [], onSelectionChange }: VenueMapProp
         </Stack>
       </Paper>
 
-      <Paper sx={{ mx: 1, mb: 1, p: { xs: 0.5, md: 1 }, bgcolor: '#ffffff', border: '1px solid #d4d4d8', overflowX: { xs: 'auto', md: 'visible' } }}>
-        <Stack direction="row" spacing={0.75} alignItems="center" sx={{ flexWrap: { xs: 'nowrap', md: 'wrap' }, rowGap: 1, minWidth: { xs: 'max-content', md: 'auto' } }}>
-          {!isMobile && <Typography variant="caption" sx={{ pl: 0.5, fontWeight: 800, letterSpacing: 0.5, color: '#52525b' }}>FILTERS</Typography>}
+      {!isMobile && <Paper sx={{ mx: 1, mb: 1, p: 1, bgcolor: '#ffffff', border: '1px solid #d4d4d8' }}>
+        <Stack direction="row" spacing={0.75} alignItems="center" sx={{ flexWrap: 'wrap', rowGap: 1 }}>
+          <Typography variant="caption" sx={{ pl: 0.5, fontWeight: 800, letterSpacing: 0.5, color: '#52525b' }}>FILTERS</Typography>
           {(['vip', 'premium', 'standard', 'balcony', 'ga'] as PriceCategory[]).map((cat) => {
             const active = filters.categories.includes(cat);
             return (
@@ -588,12 +629,12 @@ export function VenueMap({ selectedSeats = [], onSelectionChange }: VenueMapProp
               border: `1px solid ${filters.hideLimitedView ? '#7c3aed' : '#d4d4d8'}`,
             }}
           />
-          <Box sx={{ flex: 1, display: { xs: 'none', md: 'block' } }} />
+          <Box sx={{ flex: 1 }} />
           <Typography variant="caption" color="text.secondary" sx={{ pr: 0.5, whiteSpace: 'nowrap' }}>
             {Object.values(matchingBySector).reduce((sum, e) => sum + e.available, 0)} matching
           </Typography>
         </Stack>
-      </Paper>
+      </Paper>}
 
       {findOpen && (
         <Paper sx={{ mx: 1, mb: 1, p: 1.5, bgcolor: '#e4e4e7', color: '#0a0a0a', border: '1px solid #d4d4d8' }}>
@@ -604,34 +645,14 @@ export function VenueMap({ selectedSeats = [], onSelectionChange }: VenueMapProp
         </Paper>
       )}
 
-      <Box sx={{ flex: 1, display: 'grid', gridTemplateColumns: { xs: '1fr', md: `${filtersOpen && !isMobile ? '300px ' : ''}1fr${view === 'detail' && selectedSector ? ' 340px' : ''}` }, gridTemplateRows: { xs: view === 'detail' && selectedSector ? '1fr 1fr' : '1fr', md: '1fr' }, minHeight: { xs: 540, md: 600 }, overflow: 'hidden' }}>
+      <Box sx={{ flex: 1, display: 'grid', gridTemplateColumns: { xs: '1fr', md: `${filtersOpen && !isMobile ? '300px ' : ''}1fr${view === 'detail' && selectedSector ? ' 340px' : ''}` }, gridTemplateRows: { xs: view === 'detail' && selectedSector ? '240px minmax(0, 1fr)' : '1fr', md: '1fr' }, minHeight: { xs: 560, md: 600 }, overflow: 'hidden' }}>
         {filtersOpen && !isMobile && (
           <Paper square elevation={0} sx={{ p: 2, bgcolor: '#f4f4f5', color: '#0a0a0a', borderRight: '1px solid #d4d4d8', overflow: 'auto' }}>
-            <Typography fontWeight={900} sx={{ mb: 2 }}>Filters & access</Typography>
-            <Typography variant="body2" sx={{ mb: 1 }}>Price range</Typography>
-            <Slider value={filters.priceRange} min={0} max={320} valueLabelDisplay="auto" onChange={(_, value) => setFilters({ ...filters, priceRange: value as [number, number] })} sx={{ color: '#a855f7' }} />
-            <Typography variant="caption" color="#a1a1aa">{filters.priceRange[0]}–{filters.priceRange[1]} PLN</Typography>
-            <Divider sx={{ my: 2, borderColor: '#d4d4d8' }} />
-            {(['vip', 'premium', 'standard', 'balcony', 'ga'] as PriceCategory[]).map((cat) => (
-              <FormControlLabel key={cat} control={<Checkbox checked={filters.categories.includes(cat)} onChange={() => setFilters({ ...filters, categories: filters.categories.includes(cat) ? filters.categories.filter((c) => c !== cat) : [...filters.categories, cat] })} sx={{ color: '#71717a', '&.Mui-checked': { color: colors[cat] } }} />} label={cat.toUpperCase()} />
-            ))}
-            <FormControlLabel control={<Checkbox checked={filters.accessibleOnly} onChange={(e) => setFilters({ ...filters, accessibleOnly: e.target.checked })} sx={{ color: '#71717a', '&.Mui-checked': { color: '#a855f7' } }} />} label="Accessible only" />
-            <FormControlLabel control={<Checkbox checked={filters.adjacentOnly} onChange={(e) => setFilters({ ...filters, adjacentOnly: e.target.checked })} sx={{ color: '#71717a', '&.Mui-checked': { color: '#a855f7' } }} />} label="Only adjacent seats" />
-            <FormControlLabel control={<Checkbox checked={filters.hideLimitedView} onChange={(e) => setFilters({ ...filters, hideLimitedView: e.target.checked })} sx={{ color: '#71717a', '&.Mui-checked': { color: '#a855f7' } }} />} label="Hide limited view" />
-            <Divider sx={{ my: 2, borderColor: '#d4d4d8' }} />
-            <Typography fontWeight={800} sx={{ mb: 1 }}>Sector access code</Typography>
-            <Stack direction="row" spacing={1}>
-              <TextField size="small" placeholder="Crew code" value={accessCode} onChange={(e) => setAccessCode(e.target.value)} InputProps={{ sx: { color: '#0a0a0a' } }} />
-              <Button onClick={applyAccessCode} variant="contained" sx={{ bgcolor: '#7c3aed' }}><LockOpen /></Button>
-            </Stack>
-            <Typography variant="caption" color="#a1a1aa">Prototype codes: CREW, PRESS, PHANTOM</Typography>
-            <Divider sx={{ my: 2, borderColor: '#d4d4d8' }} />
-            <Typography fontWeight={800} sx={{ mb: 1 }}>Legend</Typography>
-            {[['Available', '#a855f7'], ['Selected', '#f5f3ff'], ['Sold/locked', '#52525b'], ['Loading', '#c084fc']].map(([label, color]) => <Stack key={label} direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}><Box sx={{ width: 13, height: 13, borderRadius: '50%', bgcolor: color }} /><Typography variant="caption">{label}</Typography></Stack>)}
+            {renderFilterPanel()}
           </Paper>
         )}
 
-        <Box sx={{ position: 'relative', overflow: 'hidden', minHeight: { xs: 540, md: 'auto' } }} onMouseDown={(e) => startDrag(e.clientX, e.clientY)} onMouseMove={(e) => moveDrag(e.clientX, e.clientY)} onMouseUp={() => setDragging(false)} onMouseLeave={() => setDragging(false)} onTouchStart={(e) => startDrag(e.touches[0].clientX, e.touches[0].clientY)} onTouchMove={(e) => moveDrag(e.touches[0].clientX, e.touches[0].clientY)} onTouchEnd={() => setDragging(false)}>
+        <Box sx={{ position: 'relative', overflow: 'hidden', minHeight: 0, minWidth: 0, height: '100%' }} onMouseDown={(e) => startDrag(e.clientX, e.clientY)} onMouseMove={(e) => moveDrag(e.clientX, e.clientY)} onMouseUp={() => setDragging(false)} onMouseLeave={() => setDragging(false)} onTouchStart={(e) => startDrag(e.touches[0].clientX, e.touches[0].clientY)} onTouchMove={(e) => moveDrag(e.touches[0].clientX, e.touches[0].clientY)} onTouchEnd={() => setDragging(false)}>
           <Box sx={{ position: 'absolute', inset: 0, transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: 'center', transition: dragging ? 'none' : 'transform 180ms ease' }}>
             {view === 'pure' ? renderPureMap() : view === 'detail' ? renderSeats() : renderOverview()}
           </Box>
@@ -659,6 +680,7 @@ export function VenueMap({ selectedSeats = [], onSelectionChange }: VenueMapProp
               seats={seats.filter((s) => !seatFiltered(s))}
               selectedIds={selectedIds}
               onReserve={reserveSeat}
+              onBestInSection={selectBestAvailable}
               resaleColor={RESALE_COLOR}
             />
           </Box>
@@ -706,6 +728,17 @@ export function VenueMap({ selectedSeats = [], onSelectionChange }: VenueMapProp
         </Stack>
       </Paper>
 
+      <Dialog open={isMobile && filtersOpen} onClose={() => setFiltersOpen(false)} fullScreen>
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #d4d4d8' }}>
+          Filters & access
+          <IconButton onClick={() => setFiltersOpen(false)} size="small" aria-label="Close filters"><Close /></IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>{renderFilterPanel()}</DialogContent>
+        <DialogActions>
+          <Button onClick={() => setFiltersOpen(false)} variant="contained" sx={{ bgcolor: '#7c3aed' }} fullWidth>Apply</Button>
+        </DialogActions>
+      </Dialog>
+
       <Dialog open={!!categorySeat} onClose={() => setCategorySeat(null)} fullWidth maxWidth="xs">
         <DialogTitle>Choose ticket category</DialogTitle>
         <DialogContent>
@@ -717,7 +750,13 @@ export function VenueMap({ selectedSeats = [], onSelectionChange }: VenueMapProp
         <DialogActions><Button onClick={() => setCategorySeat(null)} variant="contained">Done</Button></DialogActions>
       </Dialog>
 
-      <Snackbar open={!!snackbar} autoHideDuration={3200} onClose={() => setSnackbar('')}>
+      <Snackbar
+        open={!!snackbar}
+        autoHideDuration={3200}
+        onClose={() => setSnackbar('')}
+        anchorOrigin={{ vertical: isMobile ? 'top' : 'bottom', horizontal: 'center' }}
+        sx={{ mt: { xs: 8, md: 0 } }}
+      >
         <Alert severity="info" icon={<InfoOutlined />} sx={{ bgcolor: '#e4e4e7', color: '#0a0a0a', border: '1px solid #7c3aed' }}>{snackbar}</Alert>
       </Snackbar>
     </Box>
