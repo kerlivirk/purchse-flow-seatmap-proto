@@ -50,14 +50,16 @@ export function TicketList({ sector, seats, selectedIds, onReserve, resaleColor 
         overflow: 'hidden',
       }}
     >
-      <Box sx={{ p: 2, borderBottom: '1px solid #d4d4d8', bgcolor: '#fafafa' }}>
-        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
-          <ConfirmationNumber fontSize="small" sx={{ color: '#7c3aed' }} />
-          <Typography fontWeight={900}>{sector?.name ?? 'Tickets'}</Typography>
+      <Box sx={{ px: { xs: 1.25, md: 2 }, py: { xs: 1, md: 1.5 }, borderBottom: '1px solid #d4d4d8', bgcolor: '#fafafa', flexShrink: 0 }}>
+        <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0 }}>
+            <ConfirmationNumber fontSize="small" sx={{ color: '#7c3aed' }} />
+            <Typography fontWeight={900} noWrap>{sector?.name ?? 'Tickets'}</Typography>
+          </Stack>
+          <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
+            {available.length} ticket{available.length === 1 ? '' : 's'}
+          </Typography>
         </Stack>
-        <Typography variant="caption" color="text.secondary">
-          {available.length} matching ticket{available.length === 1 ? '' : 's'} · pick from map or list
-        </Typography>
       </Box>
 
       <Box sx={{ flex: 1, overflow: 'auto', p: 1 }}>

@@ -198,7 +198,7 @@ export default function App() {
           <Container maxWidth="xl" disableGutters={isMobile} sx={{ minHeight: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
             <EventHeader />
             <TicketTypeSelector />
-            <Paper elevation={0} sx={{ flex: 1, minHeight: { xs: 680, md: 760 }, position: 'relative', overflow: 'hidden', border: '1px solid #d4d4d8', bgcolor: '#fafafa' }}>
+            <Paper elevation={0} sx={{ height: { xs: 680, md: 760 }, position: 'relative', overflow: 'hidden', border: '1px solid #d4d4d8', bgcolor: '#fafafa' }}>
               <VenueMap selectedSeats={selectedSeats} onSelectionChange={setSelectedSeats} />
             </Paper>
           </Container>
