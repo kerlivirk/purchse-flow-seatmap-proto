@@ -20,6 +20,7 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import { Close, TimerOutlined } from '@mui/icons-material';
+import { Routes, Route, Link, useLocation } from 'react-router';
 
 import { EventHeader } from './components/EventHeader';
 import { TicketTypeSelector } from './components/TicketTypeSelector';
@@ -151,7 +152,31 @@ function CartDrawer({
   );
 }
 
-export default function App() {
+function VersionSwitch() {
+  const { pathname } = useLocation();
+  const isV2 = pathname.startsWith('/v2');
+  const baseSx = {
+    px: 1.5,
+    py: 0.5,
+    fontSize: 12,
+    fontWeight: 800,
+    borderRadius: 100,
+    textTransform: 'none' as const,
+    border: '1px solid #e9e7ed',
+    color: '#11002b',
+    textDecoration: 'none',
+    lineHeight: 1.6,
+  };
+  const active = { bgcolor: '#11002b', color: '#ffffff', borderColor: '#11002b' };
+  return (
+    <Stack direction="row" spacing={0.5} sx={{ display: { xs: 'none', sm: 'flex' } }}>
+      <Box component={Link} to="/" sx={{ ...baseSx, ...(!isV2 ? active : {}) }}>v1</Box>
+      <Box component={Link} to="/v2" sx={{ ...baseSx, ...(isV2 ? active : {}) }}>v2</Box>
+    </Stack>
+  );
+}
+
+function MapLab({ variant }: { variant: 'v1' | 'v2' }) {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [selectedSeats, setSelectedSeats] = useState<SelectedSeat[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
@@ -180,9 +205,11 @@ export default function App() {
       <Box sx={{ minHeight: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', bgcolor: 'background.default', overflow: 'hidden' }}>
         <AppBar position="sticky" elevation={0} sx={{ bgcolor: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(16px)', borderBottom: '1px solid #d4d4d8', color: '#0a0a0a' }}>
           <Toolbar sx={{ minHeight: { xs: 52, md: 64 }, px: { xs: 1.5, md: 3 } }}>
-            <Typography variant="h6" component="h1" sx={{ flexGrow: 1, letterSpacing: -0.5, fontSize: { xs: 16, md: 20 } }}>
+            <Typography variant="h6" component="h1" sx={{ letterSpacing: -0.5, fontSize: { xs: 16, md: 20 }, mr: 2 }}>
               TicketPro Map Lab
             </Typography>
+            <VersionSwitch />
+            <Box sx={{ flexGrow: 1 }} />
             {secondsLeft !== null && isMobile && (
               <Chip icon={<TimerOutlined />} label={formatTimer(secondsLeft)} size="small" sx={{ mr: 1, bgcolor: '#ddfbea', color: '#19633d', border: '1px solid #06d373', fontWeight: 800 }} />
             )}
@@ -205,11 +232,11 @@ export default function App() {
 
         <Box component="main" sx={{ flex: 1, overflow: 'auto', p: { xs: 1, md: 2 }, pb: { xs: selectedSeats.length > 0 ? 11 : 2, md: 2 } }}>
           <Container maxWidth="xl" disableGutters={isMobile} sx={{ minHeight: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <EventHeader />
+            <EventHeader variant={variant} />
             <Paper elevation={0} sx={{ border: '1px solid #e9e7ed', borderRadius: 2, overflow: 'hidden', bgcolor: '#ffffff', display: 'flex', flexDirection: 'column' }}>
               <TicketTypeSelector filters={filters} onFiltersChange={setFilters} />
               <Box sx={{ height: { xs: 680, md: 760 }, position: 'relative', borderTop: '1px solid #e9e7ed', bgcolor: '#ffffff', overflow: 'hidden' }}>
-                <VenueMap selectedSeats={selectedSeats} onSelectionChange={setSelectedSeats} filters={filters} onFiltersChange={setFilters} />
+                <VenueMap selectedSeats={selectedSeats} onSelectionChange={setSelectedSeats} filters={filters} onFiltersChange={setFilters} variant={variant} />
               </Box>
             </Paper>
           </Container>
@@ -233,5 +260,14 @@ export default function App() {
         <ReferenceGallery />
       </Box>
     </ThemeProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/v2" element={<MapLab variant="v2" />} />
+      <Route path="*" element={<MapLab variant="v1" />} />
+    </Routes>
   );
 }

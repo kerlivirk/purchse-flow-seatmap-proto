@@ -118,6 +118,9 @@ interface VenueMapProps {
   onSelectionChange?: (seats: SelectedSeat[]) => void;
   filters: VenueFilters;
   onFiltersChange: (next: VenueFilters) => void;
+  /** v1 = curved/realistic layout with inline category chip strip.
+   *  v2 = grid-aligned sections, no inline chip strip (use TicketTypeSelector). */
+  variant?: 'v1' | 'v2';
 }
 
 const colors: Record<PriceCategory, string> = {
@@ -128,16 +131,34 @@ const colors: Record<PriceCategory, string> = {
   ga: '#4b5563',
 };
 
-const sectors: Sector[] = [
+const sectorsV1: Sector[] = [
   { id: 'balcony', name: 'Balcony', localName: 'Balkon', x: 220, y: 132, width: 460, height: 72, rotation: 0, priceCategory: 'balcony', startingPrice: 99, totalSeats: 148, availableSeats: 118, accessible: true },
-  { id: 'standard-left', name: 'Standard Left', localName: 'Standard vasak', x: 105, y: 250, width: 210, height: 112, rotation: -12, priceCategory: 'standard', startingPrice: 149, totalSeats: 96, availableSeats: 61 },
+  { id: 'standard-left', name: 'Standard Left', localName: 'Standard vasak', x: 105, y: 250, width: 210, height: 112, rotation: -6, priceCategory: 'standard', startingPrice: 149, totalSeats: 96, availableSeats: 61 },
   { id: 'standard-center', name: 'Standard Center', localName: 'Standard kesk', x: 332, y: 238, width: 236, height: 118, rotation: 0, priceCategory: 'standard', startingPrice: 149, totalSeats: 126, availableSeats: 82, accessible: true },
-  { id: 'standard-right', name: 'Standard Right', localName: 'Standard parem', x: 585, y: 250, width: 210, height: 112, rotation: 12, priceCategory: 'standard', startingPrice: 149, totalSeats: 96, availableSeats: 57 },
-  { id: 'premium-left', name: 'Premium Left', localName: 'Premium vasak', x: 165, y: 390, width: 205, height: 118, rotation: -8, priceCategory: 'premium', startingPrice: 199, totalSeats: 72, availableSeats: 31, accessible: true },
-  { id: 'premium-right', name: 'Premium Right', localName: 'Premium parem', x: 530, y: 390, width: 205, height: 118, rotation: 8, priceCategory: 'premium', startingPrice: 199, totalSeats: 72, availableSeats: 28, accessible: true },
+  { id: 'standard-right', name: 'Standard Right', localName: 'Standard parem', x: 585, y: 250, width: 210, height: 112, rotation: 6, priceCategory: 'standard', startingPrice: 149, totalSeats: 96, availableSeats: 57 },
+  { id: 'premium-left', name: 'Premium Left', localName: 'Premium vasak', x: 165, y: 390, width: 205, height: 118, rotation: -4, priceCategory: 'premium', startingPrice: 199, totalSeats: 72, availableSeats: 31, accessible: true },
+  { id: 'premium-right', name: 'Premium Right', localName: 'Premium parem', x: 530, y: 390, width: 205, height: 118, rotation: 4, priceCategory: 'premium', startingPrice: 199, totalSeats: 72, availableSeats: 28, accessible: true },
   { id: 'vip-center', name: 'VIP Center', localName: 'VIP kesk', x: 350, y: 410, width: 200, height: 128, rotation: 0, priceCategory: 'vip', startingPrice: 299, totalSeats: 54, availableSeats: 18, accessible: true, tableLayout: true },
   { id: 'ga-floor', name: 'Standing GA', localName: 'Seisuala', x: 310, y: 560, width: 280, height: 88, rotation: 0, priceCategory: 'ga', startingPrice: 79, totalSeats: 220, availableSeats: 156, isGA: true },
-  { id: 'crew-hidden', name: 'Press / Crew Hold', localName: 'Press / Crew', x: 720, y: 470, width: 120, height: 72, rotation: 18, priceCategory: 'vip', startingPrice: 0, totalSeats: 24, availableSeats: 24, locked: true },
+  { id: 'crew-hidden', name: 'Press / Crew Hold', localName: 'Press / Crew', x: 720, y: 470, width: 120, height: 72, rotation: 10, priceCategory: 'vip', startingPrice: 0, totalSeats: 24, availableSeats: 24, locked: true },
+];
+
+// v2: clean grid layout — sections aligned in rows below the stage, no rotations.
+const sectorsV2: Sector[] = [
+  // Row 1: Balcony (back row, wide)
+  { id: 'balcony', name: 'Balcony', localName: 'Balkon', x: 130, y: 140, width: 640, height: 72, rotation: 0, priceCategory: 'balcony', startingPrice: 99, totalSeats: 148, availableSeats: 118, accessible: true },
+  // Row 2: Standard L | C | R
+  { id: 'standard-left', name: 'Standard Left', localName: 'Standard vasak', x: 130, y: 232, width: 200, height: 108, rotation: 0, priceCategory: 'standard', startingPrice: 149, totalSeats: 96, availableSeats: 61 },
+  { id: 'standard-center', name: 'Standard Center', localName: 'Standard kesk', x: 350, y: 232, width: 200, height: 108, rotation: 0, priceCategory: 'standard', startingPrice: 149, totalSeats: 126, availableSeats: 82, accessible: true },
+  { id: 'standard-right', name: 'Standard Right', localName: 'Standard parem', x: 570, y: 232, width: 200, height: 108, rotation: 0, priceCategory: 'standard', startingPrice: 149, totalSeats: 96, availableSeats: 57 },
+  // Row 3: Premium L | VIP C | Premium R
+  { id: 'premium-left', name: 'Premium Left', localName: 'Premium vasak', x: 130, y: 360, width: 200, height: 108, rotation: 0, priceCategory: 'premium', startingPrice: 199, totalSeats: 72, availableSeats: 31, accessible: true },
+  { id: 'vip-center', name: 'VIP Center', localName: 'VIP kesk', x: 350, y: 360, width: 200, height: 108, rotation: 0, priceCategory: 'vip', startingPrice: 299, totalSeats: 54, availableSeats: 18, accessible: true, tableLayout: true },
+  { id: 'premium-right', name: 'Premium Right', localName: 'Premium parem', x: 570, y: 360, width: 200, height: 108, rotation: 0, priceCategory: 'premium', startingPrice: 199, totalSeats: 72, availableSeats: 28, accessible: true },
+  // Row 4: Standing GA (closest to stage, wide)
+  { id: 'ga-floor', name: 'Standing GA', localName: 'Seisuala', x: 240, y: 488, width: 420, height: 88, rotation: 0, priceCategory: 'ga', startingPrice: 79, totalSeats: 220, availableSeats: 156, isGA: true },
+  // Hidden access-code sector
+  { id: 'crew-hidden', name: 'Press / Crew Hold', localName: 'Press / Crew', x: 130, y: 596, width: 200, height: 64, rotation: 0, priceCategory: 'vip', startingPrice: 0, totalSeats: 24, availableSeats: 24, locked: true },
 ];
 
 function generateSeats(sector: Sector): Seat[] {
@@ -193,7 +214,8 @@ function formatTimer(seconds: number) {
   return `${minutes}:${rest}`;
 }
 
-export function VenueMap({ selectedSeats = [], onSelectionChange, filters, onFiltersChange }: VenueMapProps) {
+export function VenueMap({ selectedSeats = [], onSelectionChange, filters, onFiltersChange, variant = 'v1' }: VenueMapProps) {
+  const sectors = variant === 'v2' ? sectorsV2 : sectorsV1;
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [view, setView] = useState<'overview' | 'pure' | 'detail'>('overview');
@@ -433,16 +455,18 @@ export function VenueMap({ selectedSeats = [], onSelectionChange, filters, onFil
           <stop offset="0%" stopColor="#e4e4e7" />
           <stop offset="100%" stopColor="#06d373" />
         </linearGradient>
-        <filter id="softShadow"><feDropShadow dx="0" dy="10" stdDeviation="10" floodOpacity="0.25" /></filter>
+        <filter id="softShadow"><feDropShadow dx="0" dy="3" stdDeviation="4" floodOpacity="0.10" /></filter>
       </defs>
 
-      <rect x="0" y="0" width="900" height="720" fill="#fafafa" />
+      <rect x="0" y="0" width="900" height="720" fill="#ffffff" />
       <text x="450" y="38" textAnchor="middle" fill="#3f3f46" fontSize="16" fontWeight="700">Venue overview · click a section to drill down</text>
-      <rect x="250" y="58" width="400" height="58" rx="18" fill="url(#stageGradient)" filter="url(#softShadow)" />
+      <rect x="250" y="58" width="400" height="58" rx="18" fill="url(#stageGradient)" filter={variant === 'v2' ? undefined : 'url(#softShadow)'} />
       <text x="450" y="94" textAnchor="middle" fill="white" fontSize="22" fontWeight="800">STAGE / SCREEN</text>
 
-      <path d="M90 190 C240 105, 660 105, 810 190" stroke="#a855f7" strokeWidth="2" fill="none" opacity="0.45" />
-      <path d="M70 690 C220 610, 680 610, 830 690" stroke="#d4d4d8" strokeWidth="4" fill="none" opacity="0.8" />
+      {variant === 'v1' && <>
+        <path d="M90 190 C240 105, 660 105, 810 190" stroke="#a855f7" strokeWidth="2" fill="none" opacity="0.45" />
+        <path d="M70 690 C220 610, 680 610, 830 690" stroke="#d4d4d8" strokeWidth="4" fill="none" opacity="0.8" />
+      </>}
 
       {visibleSectors.map((sector) => {
         const disabled = sectorFiltered(sector);
@@ -450,7 +474,7 @@ export function VenueMap({ selectedSeats = [], onSelectionChange, filters, onFil
         const noMatches = !disabled && match.available === 0 && !sector.isGA;
         const fill = disabled || noMatches ? '#d4d4d8' : colors[sector.priceCategory];
         const matchRatio = Math.min(1, match.available / maxMatching);
-        const tileOpacity = disabled ? 0.35 : noMatches ? 0.45 : 0.45 + matchRatio * 0.55;
+        const tileOpacity = disabled ? 0.18 : noMatches ? 0.22 : 0.55 + matchRatio * 0.45;
         return (
           <g
             key={sector.id}
@@ -461,15 +485,10 @@ export function VenueMap({ selectedSeats = [], onSelectionChange, filters, onFil
             onKeyDown={(e) => e.key === 'Enter' && openSector(sector)}
             style={{ cursor: disabled || noMatches ? 'not-allowed' : 'pointer' }}
           >
-            <rect width={sector.width} height={sector.height} rx="20" fill={fill} opacity={tileOpacity} stroke={sector.accessible ? '#06d373' : '#3f3f46'} strokeWidth="2" filter="url(#softShadow)" />
-            <rect x="8" y="8" width={sector.width - 16} height={sector.height - 16} rx="14" fill="rgba(255,255,255,0.06)" />
-            <text x={sector.width / 2} y={sector.height / 2 - 8} textAnchor="middle" fill="white" fontSize="15" fontWeight="800">{sector.name}</text>
-            <text x={sector.width / 2} y={sector.height / 2 + 12} textAnchor="middle" fill="#f5f3ff" fontSize="12">
-              {sector.isGA ? 'GA · add ticket' : noMatches ? 'No matching tickets' : `${match.available} matching${match.resale ? ` · ${match.resale} resale` : ''}`}
-            </text>
-            <rect x={sector.width / 2 - 58} y={sector.height - 26} width="116" height="20" rx="10" fill="rgba(0,0,0,0.55)" />
-            <text x={sector.width / 2} y={sector.height - 12} textAnchor="middle" fill="white" fontSize="11" fontWeight="700">
-              {sector.locked && !unlockedCrew ? 'Code required' : `from ${sector.startingPrice} PLN`}
+            <rect width={sector.width} height={sector.height} rx={variant === 'v2' ? 8 : 12} fill={fill} opacity={tileOpacity} stroke={sector.accessible ? '#06d373' : 'transparent'} strokeWidth={variant === 'v2' ? 1 : 1.5} filter={variant === 'v2' ? undefined : 'url(#softShadow)'} />
+            <text x={sector.width / 2} y={sector.height / 2 + 1} textAnchor="middle" fill="white" fontSize="13" fontWeight="800">{sector.name}</text>
+            <text x={sector.width / 2} y={sector.height / 2 + 16} textAnchor="middle" fill="rgba(255,255,255,0.85)" fontSize="10" fontWeight="600">
+              {sector.locked && !unlockedCrew ? 'Code required' : sector.isGA ? `GA · from ${sector.startingPrice} PLN` : `${match.available} · from ${sector.startingPrice} PLN`}
             </text>
             {match.resale > 0 && !disabled && !noMatches && (
               <circle cx={sector.width - 18} cy={18} r="7" fill={RESALE_COLOR} stroke="white" strokeWidth="2" />
@@ -587,18 +606,8 @@ export function VenueMap({ selectedSeats = [], onSelectionChange, filters, onFil
         </Stack>
       </Box>
 
-      {!isMobile && <Box sx={{ px: 2, py: 1, borderBottom: '1px solid #e9e7ed', bgcolor: '#ffffff' }}>
+      {variant === 'v1' && !isMobile && <Box sx={{ px: 2, py: 1, borderBottom: '1px solid #e9e7ed', bgcolor: '#ffffff' }}>
         <Stack direction="row" spacing={0.75} alignItems="center" sx={{ flexWrap: 'wrap', rowGap: 1 }}>
-          <Typography variant="caption" sx={{ pl: 0.5, fontWeight: 800, letterSpacing: 0.5, color: '#52525b' }}>FILTERS</Typography>
-          {(['vip', 'premium', 'standard', 'balcony', 'ga'] as PriceCategory[]).map((cat) => (
-            <M3Chip
-              key={cat}
-              label={cat.toUpperCase()}
-              size="sm"
-              selected={filters.categories.includes(cat)}
-              onClick={() => toggleCategoryFilter(cat)}
-            />
-          ))}
           <M3Chip
             label="Accessible"
             size="sm"
@@ -614,7 +623,7 @@ export function VenueMap({ selectedSeats = [], onSelectionChange, filters, onFil
           />
           <Box sx={{ flex: 1 }} />
           <Typography variant="caption" color="text.secondary" sx={{ pr: 0.5, whiteSpace: 'nowrap' }}>
-            {Object.values(matchingBySector).reduce((sum, e) => sum + e.available, 0)} matching
+            {Object.values(matchingBySector).reduce((sum, e) => sum + e.available, 0)} matching tickets
           </Typography>
         </Stack>
       </Box>}
