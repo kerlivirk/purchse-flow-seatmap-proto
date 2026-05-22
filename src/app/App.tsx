@@ -27,6 +27,7 @@ import { VenueMap, DEFAULT_FILTERS } from './components/VenueMap';
 import { ReferenceGallery } from './components/ReferenceGallery';
 import { M3Button } from './components/M3Button';
 import { Icon } from './components/Icon';
+import { V3SpecBanner } from './components/V3SpecBanner';
 import type { SelectedSeat, VenueFilters, MapHandle, MapState } from './components/VenueMap';
 import { AutoAwesome, Visibility } from '@mui/icons-material';
 
@@ -290,6 +291,7 @@ function MapLab({ variant }: { variant: 'v1' | 'v2' | 'v3' }) {
 
         <Box component="main" sx={{ flex: 1, p: { xs: 1, md: 2 }, pb: { xs: 10, md: 9 } }}>
           <Container maxWidth="xl" disableGutters={isMobile} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {variant === 'v3' && <V3SpecBanner />}
             <EventHeader variant={variant} />
             <Paper elevation={0} sx={{ height: { xs: 'calc(100vh - 240px)', md: 'calc(100vh - 220px)' }, minHeight: 540, border: '1px solid #e9e7ed', borderRadius: 2, overflow: 'hidden', bgcolor: '#ffffff', display: 'flex', flexDirection: 'column' }}>
               <VenueMap
