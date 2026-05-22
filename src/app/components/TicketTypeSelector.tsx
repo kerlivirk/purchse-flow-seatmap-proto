@@ -59,83 +59,52 @@ export function TicketTypeSelector({ filters, onFiltersChange }: TicketTypeSelec
   return (
     <Box
       sx={{
-        p: { xs: 1.5, md: 2.5 },
+        px: { xs: 1.25, md: 2 },
+        py: { xs: 0.75, md: 1 },
         backgroundColor: '#ffffff',
         color: '#11002b',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1,
       }}
     >
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700, fontSize: { xs: 15, md: 18 } }}>
-          Select ticket type
-        </Typography>
-        {!allCategoriesSelected && (
-          <Tooltip title="Show all ticket types">
-            <IconButton size="small" onClick={resetAll} sx={{ color: '#06d373' }}>
-              <FilterAltOff fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        )}
-      </Stack>
-
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: { xs: 0.75, md: 1 } }}>
+      <Typography sx={{ fontWeight: 800, fontSize: 12, color: '#5a5062', letterSpacing: 0.5, mr: 0.5, display: { xs: 'none', sm: 'block' } }}>
+        TYPE
+      </Typography>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, flex: 1 }}>
         <M3Chip
-          size="md"
+          size="sm"
           selected={allCategoriesSelected}
-          leadingIcon={<Box sx={{ display: 'flex', alignItems: 'center', color: allCategoriesSelected ? '#ffffff' : '#11002b' }}><Icon name="thumbnail-view" size={16} /></Box>}
+          leadingIcon={<Box sx={{ display: 'flex', alignItems: 'center', color: allCategoriesSelected ? '#ffffff' : '#11002b' }}><Icon name="thumbnail-view" size={14} /></Box>}
           onClick={resetAll}
-          label={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.75, md: 1 } }}>
-              <Box component="span" sx={{ fontWeight: 800, fontSize: { xs: 12, md: 14 } }}>All types</Box>
-              <Box
-                component="span"
-                sx={{
-                  bgcolor: allCategoriesSelected ? 'rgba(255,255,255,0.18)' : '#f4f2f5',
-                  color: allCategoriesSelected ? '#ffffff' : '#5a5062',
-                  px: 0.75,
-                  py: 0.1,
-                  borderRadius: 1,
-                  fontSize: { xs: 9, md: 11 },
-                  fontWeight: 700,
-                }}
-              >
-                338 total
-              </Box>
-            </Box>
-          }
+          label={<Box component="span" sx={{ fontWeight: 800, fontSize: 12 }}>All</Box>}
         />
         {ticketTypes.map((type) => {
           const active = isActive(type, filters);
           return (
             <M3Chip
               key={type.id}
-              size="md"
+              size="sm"
               selected={active}
               leadingIcon={<Box sx={{ display: 'flex', alignItems: 'center', color: active ? '#ffffff' : '#11002b' }}>{type.icon}</Box>}
               onClick={() => handleClick(type)}
               label={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.75, md: 1 } }}>
-                  <Box component="span" sx={{ fontWeight: 800, fontSize: { xs: 12, md: 14 } }}>{type.name}</Box>
-                  <Box component="span" sx={{ opacity: 0.7, fontWeight: 600, fontSize: { xs: 10, md: 12 } }}>{type.price}</Box>
-                  <Box
-                    component="span"
-                    sx={{
-                      bgcolor: active ? 'rgba(255,255,255,0.18)' : '#f4f2f5',
-                      color: active ? '#ffffff' : '#5a5062',
-                      px: 0.75,
-                      py: 0.1,
-                      borderRadius: 1,
-                      fontSize: { xs: 9, md: 11 },
-                      fontWeight: 700,
-                    }}
-                  >
-                    {type.available} left
-                  </Box>
+                <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
+                  <Box component="span" sx={{ fontWeight: 800, fontSize: 12 }}>{type.name}</Box>
+                  <Box component="span" sx={{ opacity: 0.65, fontWeight: 600, fontSize: 10 }}>{type.price}</Box>
                 </Box>
               }
             />
           );
         })}
       </Box>
+      {!allCategoriesSelected && (
+        <Tooltip title="Show all ticket types">
+          <IconButton size="small" onClick={resetAll} sx={{ color: '#06d373' }}>
+            <FilterAltOff fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      )}
     </Box>
   );
 }

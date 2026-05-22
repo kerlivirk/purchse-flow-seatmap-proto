@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AppBar,
   Badge,
@@ -23,12 +23,12 @@ import { Close, TimerOutlined } from '@mui/icons-material';
 import { Routes, Route, Link, useLocation } from 'react-router';
 
 import { EventHeader } from './components/EventHeader';
-import { TicketTypeSelector } from './components/TicketTypeSelector';
 import { VenueMap, DEFAULT_FILTERS } from './components/VenueMap';
 import { ReferenceGallery } from './components/ReferenceGallery';
 import { M3Button } from './components/M3Button';
 import { Icon } from './components/Icon';
-import type { SelectedSeat, VenueFilters } from './components/VenueMap';
+import type { SelectedSeat, VenueFilters, MapHandle, MapState } from './components/VenueMap';
+import { AutoAwesome, Visibility } from '@mui/icons-material';
 
 const RESERVATION_SECONDS = 10 * 60;
 
@@ -154,7 +154,7 @@ function CartDrawer({
 
 function VersionSwitch() {
   const { pathname } = useLocation();
-  const isV2 = pathname.startsWith('/v2');
+  const current = pathname.startsWith('/v3') ? 'v3' : pathname.startsWith('/v2') ? 'v2' : 'v1';
   const baseSx = {
     px: 1.5,
     py: 0.5,
@@ -170,19 +170,34 @@ function VersionSwitch() {
   const active = { bgcolor: '#11002b', color: '#ffffff', borderColor: '#11002b' };
   return (
     <Stack direction="row" spacing={0.5} sx={{ display: { xs: 'none', sm: 'flex' } }}>
-      <Box component={Link} to="/" sx={{ ...baseSx, ...(!isV2 ? active : {}) }}>v1</Box>
-      <Box component={Link} to="/v2" sx={{ ...baseSx, ...(isV2 ? active : {}) }}>v2</Box>
+      <Box component={Link} to="/" sx={{ ...baseSx, ...(current === 'v1' ? active : {}) }}>v1</Box>
+      <Box component={Link} to="/v2" sx={{ ...baseSx, ...(current === 'v2' ? active : {}) }}>v2</Box>
+      <Box component={Link} to="/v3" sx={{ ...baseSx, ...(current === 'v3' ? active : {}) }}>v3</Box>
     </Stack>
   );
 }
 
-function MapLab({ variant }: { variant: 'v1' | 'v2' }) {
+function MapLab({ variant }: { variant: 'v1' | 'v2' | 'v3' }) {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [selectedSeats, setSelectedSeats] = useState<SelectedSeat[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [timerStartedAt, setTimerStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
   const [filters, setFilters] = useState<VenueFilters>(DEFAULT_FILTERS);
+  const [checkoutPulse, setCheckoutPulse] = useState(false);
+  const prevCountRef = useRef(0);
+  const mapRef = useRef<MapHandle | null>(null);
+  const [mapState, setMapState] = useState<MapState>({ selectedSectorName: null, view: 'overview', tableLayoutAvailable: false });
+
+  useEffect(() => {
+    if (selectedSeats.length > prevCountRef.current) {
+      setCheckoutPulse(true);
+      const t = window.setTimeout(() => setCheckoutPulse(false), 1400);
+      prevCountRef.current = selectedSeats.length;
+      return () => window.clearTimeout(t);
+    }
+    prevCountRef.current = selectedSeats.length;
+  }, [selectedSeats.length]);
 
   const selectedTotal = useMemo(() => selectedSeats.reduce((sum, seat) => sum + seat.price, 0), [selectedSeats]);
 
@@ -202,7 +217,7 @@ function MapLab({ variant }: { variant: 'v1' | 'v2' }) {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Box sx={{ minHeight: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', bgcolor: 'background.default', overflow: 'hidden' }}>
+      <Box sx={{ minHeight: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
         <AppBar position="sticky" elevation={0} sx={{ bgcolor: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(16px)', borderBottom: '1px solid #d4d4d8', color: '#0a0a0a' }}>
           <Toolbar sx={{ minHeight: { xs: 52, md: 64 }, px: { xs: 1.5, md: 3 } }}>
             <Typography variant="h6" component="h1" sx={{ letterSpacing: -0.5, fontSize: { xs: 16, md: 20 }, mr: 2 }}>
@@ -216,45 +231,167 @@ function MapLab({ variant }: { variant: 'v1' | 'v2' }) {
             {secondsLeft !== null && !isMobile && (
               <Chip icon={<TimerOutlined />} label={`Reserved for ${formatTimer(secondsLeft)}`} sx={{ mr: 2, bgcolor: '#ddfbea', color: '#19633d', border: '1px solid #06d373' }} />
             )}
-            {!isMobile && selectedSeats.length > 0 && (
-              <Typography variant="body2" sx={{ mr: 2, fontWeight: 800 }}>
-                {selectedSeats.length} ticket{selectedSeats.length === 1 ? '' : 's'} · {selectedTotal} PLN
-              </Typography>
+            {!isMobile && selectedSeats.length > 0 ? (
+              <Box
+                role="button"
+                tabIndex={0}
+                onClick={() => setCartOpen(true)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setCartOpen(true); }}
+                aria-label="Open basket and checkout"
+                sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  px: 1.5,
+                  py: 0.5,
+                  height: 36,
+                  borderRadius: 100,
+                  border: '1px solid #06d373',
+                  bgcolor: '#06d373',
+                  color: '#11002b',
+                  cursor: 'pointer',
+                  transition: 'all 200ms ease',
+                  boxShadow: checkoutPulse ? '0 0 0 6px rgba(6,211,115,0.25)' : '0 0 0 0 rgba(6,211,115,0)',
+                  transform: checkoutPulse ? 'scale(1.05)' : 'scale(1)',
+                  '&:hover': { bgcolor: '#05b863', borderColor: '#05b863' },
+                  '@keyframes nudge': {
+                    '0%, 100%': { transform: 'translateX(0)' },
+                    '25%': { transform: 'translateX(3px)' },
+                    '75%': { transform: 'translateX(-2px)' },
+                  },
+                }}
+              >
+                <Badge badgeContent={selectedSeats.length} color="primary" sx={{ '& .MuiBadge-badge': { bgcolor: '#11002b', color: '#ffffff' } }}>
+                  <Icon name="shopping-cart-1" size={18} color="#11002b" />
+                </Badge>
+                <Typography sx={{ fontWeight: 800, fontSize: 13, letterSpacing: '0.1px' }}>
+                  Checkout · {selectedTotal} PLN
+                </Typography>
+                <Box
+                  component="span"
+                  sx={{
+                    display: 'inline-flex',
+                    animation: checkoutPulse ? 'nudge 600ms ease' : 'none',
+                  }}
+                >
+                  <Icon name="tailless-line-arrow-right-5" size={16} color="#11002b" />
+                </Box>
+              </Box>
+            ) : (
+              <IconButton color="inherit" aria-label="Open selected tickets" onClick={() => setCartOpen(true)}>
+                <Badge badgeContent={selectedSeats.length} color="primary">
+                  <Icon name="shopping-cart-1" size={22} color="#11002b" />
+                </Badge>
+              </IconButton>
             )}
-            <IconButton color="inherit" aria-label="Open selected tickets" onClick={() => setCartOpen(true)}>
-              <Badge badgeContent={selectedSeats.length} color="primary">
-                <Icon name="shopping-cart-1" size={22} color="#11002b" />
-              </Badge>
-            </IconButton>
           </Toolbar>
           {secondsLeft !== null && <LinearProgress variant="determinate" value={progress} sx={{ height: 3, bgcolor: '#d4d4d8', '& .MuiLinearProgress-bar': { bgcolor: '#a855f7' } }} />}
         </AppBar>
 
-        <Box component="main" sx={{ flex: 1, overflow: 'auto', p: { xs: 1, md: 2 }, pb: { xs: selectedSeats.length > 0 ? 11 : 2, md: 2 } }}>
-          <Container maxWidth="xl" disableGutters={isMobile} sx={{ minHeight: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Box component="main" sx={{ flex: 1, p: { xs: 1, md: 2 }, pb: { xs: 10, md: 9 } }}>
+          <Container maxWidth="xl" disableGutters={isMobile} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <EventHeader variant={variant} />
-            <Paper elevation={0} sx={{ border: '1px solid #e9e7ed', borderRadius: 2, overflow: 'hidden', bgcolor: '#ffffff', display: 'flex', flexDirection: 'column' }}>
-              <TicketTypeSelector filters={filters} onFiltersChange={setFilters} />
-              <Box sx={{ height: { xs: 680, md: 760 }, position: 'relative', borderTop: '1px solid #e9e7ed', bgcolor: '#ffffff', overflow: 'hidden' }}>
-                <VenueMap selectedSeats={selectedSeats} onSelectionChange={setSelectedSeats} filters={filters} onFiltersChange={setFilters} variant={variant} />
-              </Box>
+            <Paper elevation={0} sx={{ height: { xs: 'calc(100vh - 240px)', md: 'calc(100vh - 220px)' }, minHeight: 540, border: '1px solid #e9e7ed', borderRadius: 2, overflow: 'hidden', bgcolor: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+              <VenueMap
+                ref={mapRef}
+                selectedSeats={selectedSeats}
+                onSelectionChange={setSelectedSeats}
+                filters={filters}
+                onFiltersChange={setFilters}
+                variant={variant}
+                hideActionBar
+                onMapStateChange={setMapState}
+              />
             </Paper>
           </Container>
         </Box>
 
-        {isMobile && selectedSeats.length > 0 && (
-          <Paper elevation={2} sx={{ position: 'fixed', left: 8, right: 8, bottom: 8, zIndex: theme.zIndex.drawer - 1, p: 1.5, borderRadius: 2, bgcolor: '#ffffff', border: '1px solid #06d373' }}>
-            <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
-              <Box>
-                <Typography fontWeight={900}>{selectedSeats.length} selected · {selectedTotal} PLN</Typography>
-                {secondsLeft !== null && <Typography variant="body2" color="#19633d">Reserved for {formatTimer(secondsLeft)}</Typography>}
-              </Box>
-              <M3Button buttonType="accent" size="sm" onClick={() => setCartOpen(true)}>
-                Cart
-              </M3Button>
+        <Paper
+          elevation={0}
+          square
+          sx={{
+            position: 'fixed',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: theme.zIndex.appBar - 1,
+            borderTop: '1px solid #e9e7ed',
+            bgcolor: 'rgba(255,255,255,0.92)',
+            backdropFilter: 'blur(16px)',
+            px: { xs: 1.5, md: 3 },
+            py: { xs: 0.75, md: 1 },
+          }}
+        >
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="center"
+              sx={{
+                minWidth: 0,
+                px: 1.25,
+                py: 0.5,
+                borderRadius: 100,
+                bgcolor: selectedSeats.length > 0 ? '#f1fdf6' : '#f4f2f5',
+                border: `1px solid ${selectedSeats.length > 0 ? '#06d373' : '#e9e7ed'}`,
+                transition: 'all 200ms',
+              }}
+            >
+              <Icon name="shopping-cart-1" size={16} color={selectedSeats.length > 0 ? '#19633d' : '#5a5062'} />
+              <Typography
+                noWrap
+                sx={{
+                  fontWeight: 800,
+                  fontSize: 13,
+                  letterSpacing: '0.1px',
+                  color: selectedSeats.length > 0 ? '#11002b' : '#5a5062',
+                }}
+              >
+                {selectedSeats.length} selected · {selectedTotal} PLN
+              </Typography>
             </Stack>
-          </Paper>
-        )}
+            {mapState.selectedSectorName && (
+              <Typography variant="caption" sx={{ display: { xs: 'none', md: 'block' }, color: '#5a5062', pl: 1 }} noWrap>
+                in <strong style={{ color: '#11002b' }}>{mapState.selectedSectorName}</strong>
+              </Typography>
+            )}
+            <Box sx={{ flex: 1 }} />
+            {mapState.tableLayoutAvailable && !isMobile && (
+              <M3Button onClick={() => mapRef.current?.buyFullTable()} buttonType="outlined" size="sm" rounded={false}>
+                Buy VIP table
+              </M3Button>
+            )}
+            <M3Button
+              startIcon={!isMobile ? <AutoAwesome /> : undefined}
+              onClick={() => mapRef.current?.selectBestAvailable(2)}
+              buttonType="outlined"
+              size="sm"
+              rounded={false}
+              sx={isMobile ? { minWidth: 0, px: 1.25 } : undefined}
+            >
+              {isMobile ? <AutoAwesome fontSize="small" /> : 'Best 2 seats'}
+            </M3Button>
+            {!isMobile && (
+              <M3Button
+                startIcon={<Visibility />}
+                onClick={() => mapRef.current?.selectBestAvailable(2)}
+                buttonType="outlined"
+                size="sm"
+                rounded={false}
+              >
+                View preview
+              </M3Button>
+            )}
+            <M3Button
+              onClick={() => mapRef.current?.clearBasket()}
+              disabled={!selectedSeats.length}
+              buttonType="filled"
+              size="sm"
+            >
+              {isMobile ? 'Clear' : 'Clear basket'}
+            </M3Button>
+          </Stack>
+        </Paper>
 
         <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} selectedSeats={selectedSeats} secondsLeft={secondsLeft} />
         <ReferenceGallery />
@@ -266,6 +403,7 @@ function MapLab({ variant }: { variant: 'v1' | 'v2' }) {
 export default function App() {
   return (
     <Routes>
+      <Route path="/v3" element={<MapLab variant="v3" />} />
       <Route path="/v2" element={<MapLab variant="v2" />} />
       <Route path="*" element={<MapLab variant="v1" />} />
     </Routes>

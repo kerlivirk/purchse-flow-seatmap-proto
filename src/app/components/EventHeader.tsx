@@ -4,11 +4,11 @@ import { M3Chip } from './M3Chip';
 import { Icon } from './Icon';
 
 interface EventHeaderProps {
-  variant?: 'v1' | 'v2';
+  variant?: 'v1' | 'v2' | 'v3';
 }
 
 export function EventHeader({ variant = 'v1' }: EventHeaderProps) {
-  if (variant === 'v2') {
+  if (variant === 'v2' || variant === 'v3') {
     return (
       <Paper
         elevation={0}

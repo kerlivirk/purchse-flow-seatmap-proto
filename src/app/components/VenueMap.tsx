@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Box,
@@ -113,14 +113,31 @@ export const DEFAULT_FILTERS: VenueFilters = {
   hideLimitedView: false,
 };
 
+export interface MapState {
+  selectedSectorName: string | null;
+  view: 'overview' | 'detail' | 'pure';
+  tableLayoutAvailable: boolean;
+}
+
+export interface MapHandle {
+  selectBestAvailable: (count: number) => void;
+  buyFullTable: () => void;
+  clearBasket: () => void;
+}
+
 interface VenueMapProps {
   selectedSeats?: SelectedSeat[];
   onSelectionChange?: (seats: SelectedSeat[]) => void;
   filters: VenueFilters;
   onFiltersChange: (next: VenueFilters) => void;
-  /** v1 = curved/realistic layout with inline category chip strip.
-   *  v2 = grid-aligned sections, no inline chip strip (use TicketTypeSelector). */
-  variant?: 'v1' | 'v2';
+  /** v1 = curved/realistic layout. v2 = grid-aligned. v3 = grid + keyboard nav (must-haves build). */
+  variant?: 'v1' | 'v2' | 'v3';
+  /** Override the access-code field label (e.g. "Press code", "Sponsor code"). Defaults to "Access code". */
+  accessCodeLabel?: string;
+  /** Optional callback fired when the internal map state changes (selected sector, view, etc.). */
+  onMapStateChange?: (state: MapState) => void;
+  /** When true, the in-map bottom action bar is hidden (so the host page can render its own). */
+  hideActionBar?: boolean;
 }
 
 const colors: Record<PriceCategory, string> = {
@@ -143,22 +160,23 @@ const sectorsV1: Sector[] = [
   { id: 'crew-hidden', name: 'Press / Crew Hold', localName: 'Press / Crew', x: 720, y: 470, width: 120, height: 72, rotation: 10, priceCategory: 'vip', startingPrice: 0, totalSeats: 24, availableSeats: 24, locked: true },
 ];
 
-// v2: clean grid layout — sections aligned in rows below the stage, no rotations.
+// v2: minimal arena layout — rows of sectors gently arc around a curved stage.
+// Outer sectors tilt ±3° toward the stage so the rows read like a real venue.
 const sectorsV2: Sector[] = [
-  // Row 1: Balcony (back row, wide)
-  { id: 'balcony', name: 'Balcony', localName: 'Balkon', x: 130, y: 140, width: 640, height: 72, rotation: 0, priceCategory: 'balcony', startingPrice: 99, totalSeats: 148, availableSeats: 118, accessible: true },
-  // Row 2: Standard L | C | R
-  { id: 'standard-left', name: 'Standard Left', localName: 'Standard vasak', x: 130, y: 232, width: 200, height: 108, rotation: 0, priceCategory: 'standard', startingPrice: 149, totalSeats: 96, availableSeats: 61 },
-  { id: 'standard-center', name: 'Standard Center', localName: 'Standard kesk', x: 350, y: 232, width: 200, height: 108, rotation: 0, priceCategory: 'standard', startingPrice: 149, totalSeats: 126, availableSeats: 82, accessible: true },
-  { id: 'standard-right', name: 'Standard Right', localName: 'Standard parem', x: 570, y: 232, width: 200, height: 108, rotation: 0, priceCategory: 'standard', startingPrice: 149, totalSeats: 96, availableSeats: 57 },
-  // Row 3: Premium L | VIP C | Premium R
-  { id: 'premium-left', name: 'Premium Left', localName: 'Premium vasak', x: 130, y: 360, width: 200, height: 108, rotation: 0, priceCategory: 'premium', startingPrice: 199, totalSeats: 72, availableSeats: 31, accessible: true },
-  { id: 'vip-center', name: 'VIP Center', localName: 'VIP kesk', x: 350, y: 360, width: 200, height: 108, rotation: 0, priceCategory: 'vip', startingPrice: 299, totalSeats: 54, availableSeats: 18, accessible: true, tableLayout: true },
-  { id: 'premium-right', name: 'Premium Right', localName: 'Premium parem', x: 570, y: 360, width: 200, height: 108, rotation: 0, priceCategory: 'premium', startingPrice: 199, totalSeats: 72, availableSeats: 28, accessible: true },
-  // Row 4: Standing GA (closest to stage, wide)
-  { id: 'ga-floor', name: 'Standing GA', localName: 'Seisuala', x: 240, y: 488, width: 420, height: 88, rotation: 0, priceCategory: 'ga', startingPrice: 79, totalSeats: 220, availableSeats: 156, isGA: true },
+  // Row 1 — Balcony (back, wide arc)
+  { id: 'balcony', name: 'Balcony', localName: 'Balkon', x: 100, y: 130, width: 700, height: 80, rotation: 0, priceCategory: 'balcony', startingPrice: 99, totalSeats: 148, availableSeats: 118, accessible: true },
+  // Row 2 — Standard L | C | R (outer tiles tilt slightly)
+  { id: 'standard-left', name: 'Standard Left', localName: 'Standard vasak', x: 100, y: 232, width: 220, height: 120, rotation: -3, priceCategory: 'standard', startingPrice: 149, totalSeats: 96, availableSeats: 61 },
+  { id: 'standard-center', name: 'Standard Center', localName: 'Standard kesk', x: 340, y: 232, width: 220, height: 120, rotation: 0, priceCategory: 'standard', startingPrice: 149, totalSeats: 126, availableSeats: 82, accessible: true },
+  { id: 'standard-right', name: 'Standard Right', localName: 'Standard parem', x: 580, y: 232, width: 220, height: 120, rotation: 3, priceCategory: 'standard', startingPrice: 149, totalSeats: 96, availableSeats: 57 },
+  // Row 3 — Premium L | VIP C | Premium R
+  { id: 'premium-left', name: 'Premium Left', localName: 'Premium vasak', x: 100, y: 372, width: 220, height: 120, rotation: -3, priceCategory: 'premium', startingPrice: 199, totalSeats: 72, availableSeats: 31, accessible: true },
+  { id: 'vip-center', name: 'VIP Center', localName: 'VIP kesk', x: 340, y: 372, width: 220, height: 120, rotation: 0, priceCategory: 'vip', startingPrice: 299, totalSeats: 54, availableSeats: 18, accessible: true, tableLayout: true },
+  { id: 'premium-right', name: 'Premium Right', localName: 'Premium parem', x: 580, y: 372, width: 220, height: 120, rotation: 3, priceCategory: 'premium', startingPrice: 199, totalSeats: 72, availableSeats: 28, accessible: true },
+  // Row 4 — Standing GA (closest to stage)
+  { id: 'ga-floor', name: 'Standing GA', localName: 'Seisuala', x: 220, y: 512, width: 460, height: 100, rotation: 0, priceCategory: 'ga', startingPrice: 79, totalSeats: 220, availableSeats: 156, isGA: true },
   // Hidden access-code sector
-  { id: 'crew-hidden', name: 'Press / Crew Hold', localName: 'Press / Crew', x: 130, y: 596, width: 200, height: 64, rotation: 0, priceCategory: 'vip', startingPrice: 0, totalSeats: 24, availableSeats: 24, locked: true },
+  { id: 'crew-hidden', name: 'Press / Crew Hold', localName: 'Press / Crew', x: 100, y: 632, width: 220, height: 64, rotation: 0, priceCategory: 'vip', startingPrice: 0, totalSeats: 24, availableSeats: 24, locked: true },
 ];
 
 function generateSeats(sector: Sector): Seat[] {
@@ -214,8 +232,13 @@ function formatTimer(seconds: number) {
   return `${minutes}:${rest}`;
 }
 
-export function VenueMap({ selectedSeats = [], onSelectionChange, filters, onFiltersChange, variant = 'v1' }: VenueMapProps) {
-  const sectors = variant === 'v2' ? sectorsV2 : sectorsV1;
+export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
+  { selectedSeats = [], onSelectionChange, filters, onFiltersChange, variant = 'v1', accessCodeLabel = 'Access code', onMapStateChange, hideActionBar = false }: VenueMapProps,
+  ref
+) {
+  const gridLayout = variant === 'v2' || variant === 'v3';
+  const sectors = gridLayout ? sectorsV2 : sectorsV1;
+  const keyboardNav = variant === 'v3';
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [view, setView] = useState<'overview' | 'pure' | 'detail'>('overview');
@@ -237,6 +260,7 @@ export function VenueMap({ selectedSeats = [], onSelectionChange, filters, onFil
   };
 
   const seats = useMemo(() => (selectedSector ? generateSeats(selectedSector) : []), [selectedSector]);
+  const [focusedSeatId, setFocusedSeatId] = useState<string | null>(null);
   const selectedIds = new Set(selectedSeats.map((seat) => seat.id));
   const selectedTotal = selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
 
@@ -375,6 +399,64 @@ export function VenueMap({ selectedSeats = [], onSelectionChange, filters, onFil
     }, 550);
   };
 
+  // v3: arrow-key navigation across seats in the detail view
+  useEffect(() => {
+    if (!keyboardNav || view !== 'detail') return;
+    const handler = (e: KeyboardEvent) => {
+      if (!seats.length) return;
+      const activeTag = (document.activeElement?.tagName ?? '').toLowerCase();
+      if (activeTag === 'input' || activeTag === 'textarea') return;
+      const rowList = Array.from(new Set(seats.map((s) => s.row)));
+      let current = seats.find((s) => s.id === focusedSeatId) ?? null;
+      if (!current) {
+        current = seats.find((s) => s.status === 'available') ?? seats[0];
+      }
+      if (!current) return;
+      const sameRow = seats
+        .filter((s) => s.row === current!.row)
+        .sort((a, b) => Number(a.number) - Number(b.number));
+      const idxInRow = sameRow.findIndex((s) => s.id === current!.id);
+      const rowIdx = rowList.indexOf(current.row);
+      let next: Seat | undefined;
+      switch (e.key) {
+        case 'ArrowRight':
+          next = sameRow[idxInRow + 1];
+          break;
+        case 'ArrowLeft':
+          next = sameRow[idxInRow - 1];
+          break;
+        case 'ArrowDown':
+          if (rowIdx < rowList.length - 1) {
+            const target = rowList[rowIdx + 1];
+            const candidates = seats.filter((s) => s.row === target).sort((a, b) => Number(a.number) - Number(b.number));
+            next = candidates[Math.min(idxInRow, candidates.length - 1)];
+          }
+          break;
+        case 'ArrowUp':
+          if (rowIdx > 0) {
+            const target = rowList[rowIdx - 1];
+            const candidates = seats.filter((s) => s.row === target).sort((a, b) => Number(a.number) - Number(b.number));
+            next = candidates[Math.min(idxInRow, candidates.length - 1)];
+          }
+          break;
+        case 'Enter':
+        case ' ':
+          if (current.status === 'available') reserveSeat(current);
+          e.preventDefault();
+          return;
+        default:
+          return;
+      }
+      if (next) {
+        setFocusedSeatId(next.id);
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keyboardNav, view, seats, focusedSeatId]);
+
   const selectBestAvailable = (count: number) => {
     if (!selectedSector) {
       const best = visibleSectors.find((s) => !s.isGA && !sectorFiltered(s) && s.availableSeats > 0) ?? visibleSectors[0];
@@ -437,9 +519,9 @@ export function VenueMap({ selectedSeats = [], onSelectionChange, filters, onFil
       <FormControlLabel control={<Checkbox checked={filters.adjacentOnly} onChange={(e) => setFilters({ ...filters, adjacentOnly: e.target.checked })} sx={{ color: '#71717a', '&.Mui-checked': { color: '#06d373' } }} />} label="Only adjacent seats" />
       <FormControlLabel control={<Checkbox checked={filters.hideLimitedView} onChange={(e) => setFilters({ ...filters, hideLimitedView: e.target.checked })} sx={{ color: '#71717a', '&.Mui-checked': { color: '#06d373' } }} />} label="Hide limited view" />
       <Divider sx={{ my: 2, borderColor: '#e9e7ed' }} />
-      <Typography fontWeight={800} sx={{ mb: 1 }}>Sector access code</Typography>
+      <Typography fontWeight={800} sx={{ mb: 1 }}>{accessCodeLabel}</Typography>
       <Stack direction="row" spacing={1}>
-        <TextField size="small" placeholder="Crew code" value={accessCode} onChange={(e) => setAccessCode(e.target.value)} InputProps={{ sx: { color: '#11002b' } }} />
+        <TextField size="small" placeholder={accessCodeLabel} value={accessCode} onChange={(e) => setAccessCode(e.target.value)} InputProps={{ sx: { color: '#11002b' } }} />
         <M3Button onClick={applyAccessCode} buttonType="accent" size="sm" sx={{ minWidth: 48 }}><LockOpen /></M3Button>
       </Stack>
       <Typography variant="caption" color="text.secondary">Prototype codes: CREW, PRESS, PHANTOM</Typography>
@@ -460,14 +542,29 @@ export function VenueMap({ selectedSeats = [], onSelectionChange, filters, onFil
       </defs>
 
       <rect x="0" y="0" width="900" height="720" fill="#ffffff" />
-      <text x="450" y="38" textAnchor="middle" fill="#3f3f46" fontSize="16" fontWeight="700">Venue overview · click a section to drill down</text>
-      <rect x="250" y="58" width="400" height="58" rx="18" fill="url(#stageGradient)" filter={variant === 'v2' ? undefined : 'url(#softShadow)'} />
-      <text x="450" y="94" textAnchor="middle" fill="white" fontSize="22" fontWeight="800">STAGE / SCREEN</text>
 
-      {variant === 'v1' && <>
-        <path d="M90 190 C240 105, 660 105, 810 190" stroke="#a855f7" strokeWidth="2" fill="none" opacity="0.45" />
-        <path d="M70 690 C220 610, 680 610, 830 690" stroke="#d4d4d8" strokeWidth="4" fill="none" opacity="0.8" />
-      </>}
+      {gridLayout ? (
+        <>
+          {/* Curved proscenium-style stage at the very top */}
+          <path
+            d="M 220 80 Q 220 30 280 30 L 620 30 Q 680 30 680 80 L 680 80 Z"
+            fill="#11002b"
+          />
+          <text x="450" y="62" textAnchor="middle" fill="#ffffff" fontSize="14" fontWeight="800" letterSpacing="2">STAGE</text>
+          {/* Subtle arc echoing the stage curve, behind the first row */}
+          <path d="M 110 110 Q 450 86 790 110" stroke="#e9e7ed" strokeWidth="1.5" fill="none" />
+          {/* Floor edge near the front of the stage area */}
+          <path d="M 220 660 Q 450 640 680 660" stroke="#f4f2f5" strokeWidth="2" fill="none" />
+        </>
+      ) : (
+        <>
+          <text x="450" y="34" textAnchor="middle" fill="#5a5062" fontSize="14" fontWeight="700">Click a section to drill down</text>
+          <rect x="250" y="58" width="400" height="58" rx="18" fill="url(#stageGradient)" filter="url(#softShadow)" />
+          <text x="450" y="94" textAnchor="middle" fill="white" fontSize="22" fontWeight="800">STAGE / SCREEN</text>
+          <path d="M90 190 C240 105, 660 105, 810 190" stroke="#a855f7" strokeWidth="2" fill="none" opacity="0.45" />
+          <path d="M70 690 C220 610, 680 610, 830 690" stroke="#d4d4d8" strokeWidth="4" fill="none" opacity="0.8" />
+        </>
+      )}
 
       {visibleSectors.map((sector) => {
         const disabled = sectorFiltered(sector);
@@ -486,11 +583,22 @@ export function VenueMap({ selectedSeats = [], onSelectionChange, filters, onFil
             onKeyDown={(e) => e.key === 'Enter' && openSector(sector)}
             style={{ cursor: disabled || noMatches ? 'not-allowed' : 'pointer' }}
           >
-            <rect width={sector.width} height={sector.height} rx={variant === 'v2' ? 8 : 12} fill={fill} opacity={tileOpacity} stroke={sector.accessible ? '#06d373' : 'transparent'} strokeWidth={variant === 'v2' ? 1 : 1.5} filter={variant === 'v2' ? undefined : 'url(#softShadow)'} />
-            <text x={sector.width / 2} y={sector.height / 2 + 1} textAnchor="middle" fill="white" fontSize="13" fontWeight="800">{sector.name}</text>
-            <text x={sector.width / 2} y={sector.height / 2 + 16} textAnchor="middle" fill="rgba(255,255,255,0.85)" fontSize="10" fontWeight="600">
-              {sector.locked && !unlockedCrew ? 'Code required' : sector.isGA ? `GA · from ${sector.startingPrice} PLN` : `${match.available} · from ${sector.startingPrice} PLN`}
-            </text>
+            <rect width={sector.width} height={sector.height} rx={gridLayout ? 14 : 12} fill={fill} opacity={tileOpacity} stroke={sector.accessible ? '#06d373' : 'transparent'} strokeWidth={gridLayout ? 1 : 1.5} filter={gridLayout ? undefined : 'url(#softShadow)'} />
+            {gridLayout ? (
+              <>
+                <text x={sector.width / 2} y={sector.height / 2 - 2} textAnchor="middle" fill="white" fontSize="13" fontWeight="800">{sector.name}</text>
+                <text x={sector.width / 2} y={sector.height / 2 + 14} textAnchor="middle" fill="rgba(255,255,255,0.78)" fontSize="10" fontWeight="600">
+                  {sector.locked && !unlockedCrew ? 'Code required' : sector.isGA ? `from ${sector.startingPrice} PLN` : `${match.available} seats · from ${sector.startingPrice} PLN`}
+                </text>
+              </>
+            ) : (
+              <>
+                <text x={sector.width / 2} y={sector.height / 2 + 1} textAnchor="middle" fill="white" fontSize="13" fontWeight="800">{sector.name}</text>
+                <text x={sector.width / 2} y={sector.height / 2 + 16} textAnchor="middle" fill="rgba(255,255,255,0.85)" fontSize="10" fontWeight="600">
+                  {sector.locked && !unlockedCrew ? 'Code required' : sector.isGA ? `GA · from ${sector.startingPrice} PLN` : `${match.available} · from ${sector.startingPrice} PLN`}
+                </text>
+              </>
+            )}
             {match.resale > 0 && !disabled && !noMatches && (
               <circle cx={sector.width - 18} cy={18} r="7" fill={RESALE_COLOR} stroke="white" strokeWidth="2" />
             )}
@@ -542,15 +650,21 @@ export function VenueMap({ selectedSeats = [], onSelectionChange, filters, onFil
         const filtered = seatFiltered(seat);
         const fill = failed ? '#ef4444' : loading ? '#c084fc' : selected ? '#f5f3ff' : seat.status === 'unavailable' ? '#3f3f46' : seat.status === 'reserved-by-other' ? '#52525b' : filtered ? '#d4d4d8' : colors[seat.priceCategory];
         const isResale = seat.resale && !filtered && seat.status === 'available';
-        const stroke = selected ? '#06d373' : failed ? '#fecaca' : isResale ? RESALE_COLOR : '#3f3f46';
-        const strokeWidth = isResale && !selected ? 2.5 : 2;
+        const isFocused = keyboardNav && focusedSeatId === seat.id;
+        const stroke = isFocused ? '#11002b' : selected ? '#06d373' : failed ? '#fecaca' : isResale ? RESALE_COLOR : '#3f3f46';
+        const strokeWidth = isFocused ? 3 : isResale && !selected ? 2.5 : 2;
         return (
           <Tooltip
             key={seat.id}
             title={`${seat.sectorName} · Row ${seat.row}, Seat ${seat.number} · ${seat.price} PLN${seat.resale ? ' · Resale' : ''}${seat.note ? ` · ${seat.note}` : ''}${seat.categories ? ' · multiple prices' : ''}`}
             arrow
           >
-            <g onClick={() => !filtered && reserveSeat(seat)} style={{ cursor: filtered || seat.status !== 'available' ? 'not-allowed' : 'pointer', opacity: filtered ? 0.35 : 1 }}>
+            <g
+              onClick={() => !filtered && reserveSeat(seat)}
+              aria-label={`${seat.sectorName} Row ${seat.row} Seat ${seat.number}, ${seat.status}, ${seat.price} PLN`}
+              style={{ cursor: filtered || seat.status !== 'available' ? 'not-allowed' : 'pointer', opacity: filtered ? 0.35 : 1 }}
+            >
+              {isFocused && <circle cx={seat.x} cy={seat.y} r={14} fill="none" stroke="#11002b" strokeWidth="1.5" strokeDasharray="3 2" />}
               <circle cx={seat.x} cy={seat.y} r={selected ? 11 : 9} fill={fill} stroke={stroke} strokeWidth={strokeWidth} />
               {isResale && <circle cx={seat.x + 7} cy={seat.y - 7} r="3" fill={RESALE_COLOR} stroke="white" strokeWidth="1" />}
               {loading && <circle cx={seat.x} cy={seat.y} r="15" fill="none" stroke="#c084fc" strokeWidth="2" strokeDasharray="5 5"><animateTransform attributeName="transform" type="rotate" from={`0 ${seat.x} ${seat.y}`} to={`360 ${seat.x} ${seat.y}`} dur="1s" repeatCount="indefinite" /></circle>}
@@ -563,9 +677,23 @@ export function VenueMap({ selectedSeats = [], onSelectionChange, filters, onFil
     </svg>
   );
 
+  useImperativeHandle(ref, () => ({
+    selectBestAvailable,
+    buyFullTable,
+    clearBasket: () => updateSelection([]),
+  }), [selectBestAvailable, buyFullTable, updateSelection]);
+
+  useEffect(() => {
+    onMapStateChange?.({
+      selectedSectorName: selectedSector?.name ?? null,
+      view,
+      tableLayoutAvailable: !!selectedSector?.tableLayout,
+    });
+  }, [selectedSector, view, onMapStateChange]);
+
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#ffffff', color: '#11002b' }}>
-      <Box sx={{ px: { xs: 1.5, md: 2 }, py: { xs: 1, md: 1.5 }, borderBottom: '1px solid #e9e7ed', bgcolor: '#ffffff' }}>
+      <Box sx={{ px: { xs: 1.25, md: 1.5 }, py: { xs: 0.5, md: 0.75 }, borderBottom: '1px solid #e9e7ed', bgcolor: '#ffffff' }}>
         <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: { xs: 'nowrap', md: 'wrap' } }}>
           {view === 'detail' && (
             isMobile ? (
@@ -577,8 +705,7 @@ export function VenueMap({ selectedSeats = [], onSelectionChange, filters, onFil
             )
           )}
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography fontWeight={900} noWrap>{view === 'overview' ? 'Venue overview' : view === 'pure' ? 'Pure map' : selectedSector?.name}</Typography>
-            {!isMobile && <Typography variant="caption" color="#a1a1aa">Browse freely. Timer starts only after first successful reservation.</Typography>}
+            <Typography sx={{ fontWeight: 800, fontSize: { xs: 13, md: 14 } }} noWrap>{view === 'overview' ? 'Venue overview' : view === 'pure' ? 'Pure map' : selectedSector?.name}</Typography>
           </Box>
           {!isMobile && (
             <PillToggleGroup
@@ -629,27 +756,71 @@ export function VenueMap({ selectedSeats = [], onSelectionChange, filters, onFil
         </Stack>
       </Box>
 
-      {variant === 'v1' && !isMobile && <Box sx={{ px: 2, py: 1, borderBottom: '1px solid #e9e7ed', bgcolor: '#ffffff' }}>
-        <Stack direction="row" spacing={0.75} alignItems="center" sx={{ flexWrap: 'wrap', rowGap: 1 }}>
-          <M3Chip
-            label="Accessible"
-            size="sm"
-            leadingIcon={<Accessible sx={{ fontSize: 16 }} />}
-            selected={filters.accessibleOnly}
-            onClick={() => setFilters((prev) => ({ ...prev, accessibleOnly: !prev.accessibleOnly }))}
-          />
-          <M3Chip
-            label="Hide limited view"
-            size="sm"
-            selected={filters.hideLimitedView}
-            onClick={() => setFilters((prev) => ({ ...prev, hideLimitedView: !prev.hideLimitedView }))}
-          />
-          <Box sx={{ flex: 1 }} />
-          <Typography variant="caption" color="text.secondary" sx={{ pr: 0.5, whiteSpace: 'nowrap' }}>
-            {Object.values(matchingBySector).reduce((sum, e) => sum + e.available, 0)} matching tickets
+      <Box sx={{ px: { xs: 1, md: 1.5 }, py: 0.75, borderBottom: '1px solid #e9e7ed', bgcolor: '#ffffff', overflowX: { xs: 'auto', md: 'visible' } }}>
+        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ flexWrap: { xs: 'nowrap', md: 'wrap' }, rowGap: 0.75, minWidth: { xs: 'max-content', md: 'auto' } }}>
+          {(() => {
+            const ALL_CATS: PriceCategory[] = ['vip', 'premium', 'standard', 'balcony', 'ga'];
+            const allSelected = filters.categories.length === ALL_CATS.length && !filters.accessibleOnly;
+            const setSingle = (cat: PriceCategory) => {
+              const onlyThis = filters.categories.length === 1 && filters.categories[0] === cat && !filters.accessibleOnly;
+              if (onlyThis) setFilters({ ...filters, categories: ALL_CATS, accessibleOnly: false });
+              else setFilters({ ...filters, categories: [cat], accessibleOnly: false });
+            };
+            const catChip = (id: PriceCategory, name: string, icon: string, price: string) => {
+              const isOnly = filters.categories.length === 1 && filters.categories[0] === id && !filters.accessibleOnly;
+              return (
+                <M3Chip
+                  key={id}
+                  size="sm"
+                  selected={isOnly}
+                  leadingIcon={<Box sx={{ display: 'flex', alignItems: 'center', color: isOnly ? '#ffffff' : '#11002b' }}><Icon name={icon} size={14} /></Box>}
+                  onClick={() => setSingle(id)}
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
+                      <Box component="span" sx={{ fontWeight: 800, fontSize: 12 }}>{name}</Box>
+                      <Box component="span" sx={{ opacity: 0.65, fontWeight: 600, fontSize: 10 }}>{price}</Box>
+                    </Box>
+                  }
+                />
+              );
+            };
+            return (
+              <>
+                <M3Chip
+                  size="sm"
+                  selected={allSelected}
+                  leadingIcon={<Box sx={{ display: 'flex', alignItems: 'center', color: allSelected ? '#ffffff' : '#11002b' }}><Icon name="thumbnail-view" size={14} /></Box>}
+                  onClick={() => setFilters({ ...filters, categories: ALL_CATS, accessibleOnly: false })}
+                  label={<Box component="span" sx={{ fontWeight: 800, fontSize: 12 }}>All</Box>}
+                />
+                {catChip('vip', 'VIP', 'star-1', '299 PLN')}
+                {catChip('premium', 'Premium', 'gift-2', '199 PLN')}
+                {catChip('standard', 'Standard', 'chair-3', '149 PLN')}
+                {catChip('balcony', 'Balcony', 'few-tickets', '99 PLN')}
+                {catChip('ga', 'Standing', 'user-multiple-group', '79 PLN')}
+                <Box sx={{ width: 1, height: 22, bgcolor: '#e9e7ed', mx: 0.5 }} />
+                <M3Chip
+                  label="Accessible"
+                  size="sm"
+                  leadingIcon={<Box sx={{ display: 'flex', alignItems: 'center', color: filters.accessibleOnly ? '#ffffff' : '#11002b' }}><Icon name="house-key-access" size={14} /></Box>}
+                  selected={filters.accessibleOnly}
+                  onClick={() => setFilters((prev) => ({ ...prev, accessibleOnly: !prev.accessibleOnly }))}
+                />
+                <M3Chip
+                  label="Hide limited view"
+                  size="sm"
+                  selected={filters.hideLimitedView}
+                  onClick={() => setFilters((prev) => ({ ...prev, hideLimitedView: !prev.hideLimitedView }))}
+                />
+              </>
+            );
+          })()}
+          <Box sx={{ flex: 1, display: { xs: 'none', md: 'block' } }} />
+          <Typography variant="caption" color="text.secondary" sx={{ pr: 0.5, whiteSpace: 'nowrap', display: { xs: 'none', md: 'block' } }}>
+            {Object.values(matchingBySector).reduce((sum, e) => sum + e.available, 0)} matching
           </Typography>
         </Stack>
-      </Box>}
+      </Box>
 
       {findOpen && (
         <Box sx={{ px: 2, py: 1.25, bgcolor: '#ffffff', borderBottom: '1px solid #e9e7ed' }}>
@@ -706,15 +877,39 @@ export function VenueMap({ selectedSeats = [], onSelectionChange, filters, onFil
         )}
       </Box>
 
-      <Box sx={{ px: { xs: 1.5, md: 2 }, py: { xs: 1, md: 1.5 }, bgcolor: '#ffffff', color: '#11002b', borderTop: '1px solid #e9e7ed' }}>
+      {!hideActionBar && <Box sx={{ px: { xs: 1.5, md: 2 }, py: { xs: 1, md: 1.25 }, bgcolor: '#ffffff', color: '#11002b', borderTop: '1px solid #e9e7ed', position: 'sticky', bottom: 0, zIndex: 4 }}>
         <Stack direction="row" spacing={1} alignItems="center">
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ flex: 1, minWidth: 0 }}>
-            <Icon name="shopping-cart-1" size={isMobile ? 18 : 22} color="#11002b" />
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            sx={{
+              flex: { xs: 1, md: 'none' },
+              minWidth: 0,
+              px: 1.25,
+              py: 0.5,
+              borderRadius: 100,
+              bgcolor: selectedSeats.length > 0 ? '#f1fdf6' : '#f4f2f5',
+              border: `1px solid ${selectedSeats.length > 0 ? '#06d373' : '#e9e7ed'}`,
+              transition: 'all 200ms',
+            }}
+          >
+            <Icon name="shopping-cart-1" size={16} color={selectedSeats.length > 0 ? '#19633d' : '#5a5062'} />
             <Box sx={{ minWidth: 0 }}>
-              <Typography fontWeight={900} noWrap>{selectedSeats.length} selected · {selectedTotal} PLN</Typography>
-              {!isMobile && <Typography variant="caption" color="#a1a1aa">Running total updates live. More seats inherit the same timer.</Typography>}
+              <Typography
+                noWrap
+                sx={{
+                  fontWeight: 800,
+                  fontSize: 13,
+                  letterSpacing: '0.1px',
+                  color: selectedSeats.length > 0 ? '#11002b' : '#5a5062',
+                }}
+              >
+                {selectedSeats.length} selected · {selectedTotal} PLN
+              </Typography>
             </Box>
           </Stack>
+          <Box sx={{ flex: 1 }} />
           {isMobile ? (
             <>
               {selectedSector?.tableLayout && (
@@ -745,7 +940,7 @@ export function VenueMap({ selectedSeats = [], onSelectionChange, filters, onFil
             </>
           )}
         </Stack>
-      </Box>
+      </Box>}
 
       <Dialog open={isMobile && filtersOpen} onClose={() => setFiltersOpen(false)} fullScreen>
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e9e7ed' }}>
@@ -780,4 +975,4 @@ export function VenueMap({ selectedSeats = [], onSelectionChange, filters, onFil
       </Snackbar>
     </Box>
   );
-}
+});
