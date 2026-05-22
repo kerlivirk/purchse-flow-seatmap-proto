@@ -756,7 +756,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
         </Stack>
       </Box>
 
-      <Box sx={{ px: { xs: 1, md: 1.5 }, py: 0.75, borderBottom: '1px solid #e9e7ed', bgcolor: '#ffffff', overflowX: { xs: 'auto', md: 'visible' } }}>
+      <Box sx={{ px: { xs: 1, md: 1.5 }, py: 0.75, bgcolor: '#ffffff', overflowX: { xs: 'auto', md: 'visible' } }}>
         <Stack direction="row" spacing={0.5} alignItems="center" sx={{ flexWrap: { xs: 'nowrap', md: 'wrap' }, rowGap: 0.75, minWidth: { xs: 'max-content', md: 'auto' } }}>
           {(() => {
             const ALL_CATS: PriceCategory[] = ['vip', 'premium', 'standard', 'balcony', 'ga'];
