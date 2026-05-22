@@ -10,6 +10,7 @@ import {
 import type { PriceCategory, Seat, Sector } from './VenueMap';
 import { M3Button } from './M3Button';
 import { Icon } from './Icon';
+import { PillToggleGroup } from './PillToggleGroup';
 
 interface TicketListProps {
   sector: Sector | null;
@@ -131,21 +132,17 @@ export function TicketList({
           </Typography>
         </Stack>
         {onBestInSection && totalAvailable > 0 && (
-          <Stack direction="row" spacing={0.75} alignItems="center">
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
             <Typography variant="caption" sx={{ fontWeight: 800, color: '#52525b' }}>Best in section:</Typography>
-            {[1, 2, 4].map((n) => (
-              <M3Button
-                key={n}
-                size="xs"
-                buttonType="outlined"
-                rounded={false}
-                onClick={() => onBestInSection(n)}
-                startIcon={n === 1 ? undefined : <AutoAwesome sx={{ fontSize: 14 }} />}
-                sx={{ minWidth: 0 }}
-              >
-                {n}
-              </M3Button>
-            ))}
+            <PillToggleGroup
+              size="sm"
+              options={[
+                { value: 1, label: '1 seat' },
+                { value: 2, label: '2 seats' },
+                { value: 4, label: '4 seats' },
+              ]}
+              onChange={(n) => onBestInSection(Number(n))}
+            />
           </Stack>
         )}
       </Box>

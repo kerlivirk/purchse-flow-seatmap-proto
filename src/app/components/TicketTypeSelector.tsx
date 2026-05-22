@@ -78,6 +78,31 @@ export function TicketTypeSelector({ filters, onFiltersChange }: TicketTypeSelec
       </Stack>
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: { xs: 0.75, md: 1 } }}>
+        <M3Chip
+          size="md"
+          selected={allCategoriesSelected}
+          leadingIcon={<Box sx={{ display: 'flex', alignItems: 'center', color: allCategoriesSelected ? '#ffffff' : '#11002b' }}><Icon name="thumbnail-view" size={16} /></Box>}
+          onClick={resetAll}
+          label={
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.75, md: 1 } }}>
+              <Box component="span" sx={{ fontWeight: 800, fontSize: { xs: 12, md: 14 } }}>All types</Box>
+              <Box
+                component="span"
+                sx={{
+                  bgcolor: allCategoriesSelected ? 'rgba(255,255,255,0.18)' : '#f4f2f5',
+                  color: allCategoriesSelected ? '#ffffff' : '#5a5062',
+                  px: 0.75,
+                  py: 0.1,
+                  borderRadius: 1,
+                  fontSize: { xs: 9, md: 11 },
+                  fontWeight: 700,
+                }}
+              >
+                338 total
+              </Box>
+            </Box>
+          }
+        />
         {ticketTypes.map((type) => {
           const active = isActive(type, filters);
           return (

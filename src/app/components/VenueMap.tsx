@@ -19,8 +19,6 @@ import {
   Snackbar,
   Stack,
   TextField,
-  ToggleButton,
-  ToggleButtonGroup,
   Tooltip,
   Typography,
   useMediaQuery,
@@ -49,6 +47,8 @@ import { TicketList } from './TicketList';
 import { M3Button } from './M3Button';
 import { M3Chip } from './M3Chip';
 import { Icon } from './Icon';
+import { SearchField } from './SearchField';
+import { PillToggleGroup } from './PillToggleGroup';
 
 export type PriceCategory = 'vip' | 'premium' | 'standard' | 'balcony' | 'ga';
 export type SeatStatus = 'available' | 'unavailable' | 'selected' | 'pre-reserving' | 'reservation-failed' | 'reserved-by-other';
@@ -424,27 +424,28 @@ export function VenueMap({ selectedSeats = [], onSelectionChange, filters, onFil
 
   const renderFilterPanel = () => (
     <>
-      <Typography fontWeight={900} sx={{ mb: 2 }}>Filters & access</Typography>
-      <Typography variant="body2" sx={{ mb: 1 }}>Price range</Typography>
+      <Typography fontWeight={900} sx={{ mb: 0.5 }}>Advanced filters</Typography>
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+        Categories are picked above in <strong>Select ticket type</strong>.
+      </Typography>
+
+      <Typography variant="body2" sx={{ mb: 1, fontWeight: 700 }}>Price range</Typography>
       <Slider value={filters.priceRange} min={0} max={320} valueLabelDisplay="auto" onChange={(_, value) => setFilters({ ...filters, priceRange: value as [number, number] })} sx={{ color: '#06d373' }} />
-      <Typography variant="caption" color="#a1a1aa">{filters.priceRange[0]}–{filters.priceRange[1]} PLN</Typography>
-      <Divider sx={{ my: 2, borderColor: '#d4d4d8' }} />
-      {(['vip', 'premium', 'standard', 'balcony', 'ga'] as PriceCategory[]).map((cat) => (
-        <FormControlLabel key={cat} control={<Checkbox checked={filters.categories.includes(cat)} onChange={() => setFilters({ ...filters, categories: filters.categories.includes(cat) ? filters.categories.filter((c) => c !== cat) : [...filters.categories, cat] })} sx={{ color: '#71717a', '&.Mui-checked': { color: colors[cat] } }} />} label={cat.toUpperCase()} />
-      ))}
+      <Typography variant="caption" color="text.secondary">{filters.priceRange[0]}–{filters.priceRange[1]} PLN</Typography>
+      <Divider sx={{ my: 2, borderColor: '#e9e7ed' }} />
       <FormControlLabel control={<Checkbox checked={filters.accessibleOnly} onChange={(e) => setFilters({ ...filters, accessibleOnly: e.target.checked })} sx={{ color: '#71717a', '&.Mui-checked': { color: '#06d373' } }} />} label="Accessible only" />
       <FormControlLabel control={<Checkbox checked={filters.adjacentOnly} onChange={(e) => setFilters({ ...filters, adjacentOnly: e.target.checked })} sx={{ color: '#71717a', '&.Mui-checked': { color: '#06d373' } }} />} label="Only adjacent seats" />
       <FormControlLabel control={<Checkbox checked={filters.hideLimitedView} onChange={(e) => setFilters({ ...filters, hideLimitedView: e.target.checked })} sx={{ color: '#71717a', '&.Mui-checked': { color: '#06d373' } }} />} label="Hide limited view" />
-      <Divider sx={{ my: 2, borderColor: '#d4d4d8' }} />
+      <Divider sx={{ my: 2, borderColor: '#e9e7ed' }} />
       <Typography fontWeight={800} sx={{ mb: 1 }}>Sector access code</Typography>
       <Stack direction="row" spacing={1}>
         <TextField size="small" placeholder="Crew code" value={accessCode} onChange={(e) => setAccessCode(e.target.value)} InputProps={{ sx: { color: '#11002b' } }} />
         <M3Button onClick={applyAccessCode} buttonType="accent" size="sm" sx={{ minWidth: 48 }}><LockOpen /></M3Button>
       </Stack>
-      <Typography variant="caption" color="#a1a1aa">Prototype codes: CREW, PRESS, PHANTOM</Typography>
-      <Divider sx={{ my: 2, borderColor: '#d4d4d8' }} />
+      <Typography variant="caption" color="text.secondary">Prototype codes: CREW, PRESS, PHANTOM</Typography>
+      <Divider sx={{ my: 2, borderColor: '#e9e7ed' }} />
       <Typography fontWeight={800} sx={{ mb: 1 }}>Legend</Typography>
-      {[['Available', '#a855f7'], ['Selected', '#f5f3ff'], ['Sold/locked', '#52525b'], ['Loading', '#c084fc']].map(([label, color]) => <Stack key={label} direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}><Box sx={{ width: 13, height: 13, borderRadius: '50%', bgcolor: color }} /><Typography variant="caption">{label}</Typography></Stack>)}
+      {[['Available', '#06d373'], ['Selected', '#11002b'], ['Sold/locked', '#52525b'], ['Resale', '#ec4899']].map(([label, color]) => <Stack key={label} direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}><Box sx={{ width: 13, height: 13, borderRadius: '50%', bgcolor: color }} /><Typography variant="caption">{label}</Typography></Stack>)}
     </>
   );
 
@@ -580,10 +581,32 @@ export function VenueMap({ selectedSeats = [], onSelectionChange, filters, onFil
             {!isMobile && <Typography variant="caption" color="#a1a1aa">Browse freely. Timer starts only after first successful reservation.</Typography>}
           </Box>
           {!isMobile && (
-            <ToggleButtonGroup value={view === 'pure' ? 'pure' : 'shopping'} exclusive size="small" onChange={(_, val) => val && setView(val === 'pure' ? 'pure' : selectedSector ? 'detail' : 'overview')}>
-              <ToggleButton value="shopping" sx={{ color: '#11002b', borderColor: '#e9e7ed', textTransform: 'none' }}><Icon name="shopping-cart-1" size={16} /><Box component="span" sx={{ ml: 0.75 }}>Shopping map</Box></ToggleButton>
-              <ToggleButton value="pure" sx={{ color: '#11002b', borderColor: '#e9e7ed', textTransform: 'none' }}><Icon name="fit-screen-streamline-core" size={16} /><Box component="span" sx={{ ml: 0.75 }}>Pure map</Box></ToggleButton>
-            </ToggleButtonGroup>
+            <PillToggleGroup
+              size="sm"
+              grouped
+              value={view === 'pure' ? 'pure' : 'shopping'}
+              onChange={(val) => setView(val === 'pure' ? 'pure' : selectedSector ? 'detail' : 'overview')}
+              options={[
+                {
+                  value: 'shopping',
+                  label: (
+                    <Stack direction="row" spacing={0.75} alignItems="center">
+                      <Icon name="shopping-cart-1" size={14} />
+                      <span>Shopping map</span>
+                    </Stack>
+                  ),
+                },
+                {
+                  value: 'pure',
+                  label: (
+                    <Stack direction="row" spacing={0.75} alignItems="center">
+                      <Icon name="fit-screen-streamline-core" size={14} />
+                      <span>Pure map</span>
+                    </Stack>
+                  ),
+                },
+              ]}
+            />
           )}
           {isMobile ? (
             <>
@@ -631,7 +654,11 @@ export function VenueMap({ selectedSeats = [], onSelectionChange, filters, onFil
       {findOpen && (
         <Box sx={{ px: 2, py: 1.25, bgcolor: '#ffffff', borderBottom: '1px solid #e9e7ed' }}>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-            <TextField size="small" placeholder="Search row, seat or section" fullWidth InputProps={{ sx: { color: '#11002b' } }} />
+            <SearchField
+              size="sm"
+              placeholder="Search by Name, ID or venue"
+              onSubmit={() => setSnackbar('Search kept as secondary path. Matching rows would highlight on the map.')}
+            />
             <M3Button buttonType="accent" size="sm" onClick={() => setSnackbar('Search kept as secondary path. Matching rows would highlight on the map.')}>Search</M3Button>
           </Stack>
         </Box>
@@ -722,7 +749,7 @@ export function VenueMap({ selectedSeats = [], onSelectionChange, filters, onFil
 
       <Dialog open={isMobile && filtersOpen} onClose={() => setFiltersOpen(false)} fullScreen>
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e9e7ed' }}>
-          Filters & access
+          Advanced filters
           <IconButton onClick={() => setFiltersOpen(false)} size="small" aria-label="Close filters"><Close /></IconButton>
         </DialogTitle>
         <DialogContent sx={{ pt: 2 }}>{renderFilterPanel()}</DialogContent>
