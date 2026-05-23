@@ -70,6 +70,10 @@ export interface Sector {
   accessible?: boolean;
   locked?: boolean;
   tableLayout?: boolean;
+  /** Optional SVG path. When set, the sector renders as that path; x/y/w/h still drive label position. */
+  path?: string;
+  /** Optional label color override (when path background contrasts differently). */
+  labelColor?: string;
 }
 
 export interface Seat {
@@ -138,6 +142,8 @@ interface VenueMapProps {
   onMapStateChange?: (state: MapState) => void;
   /** When true, the in-map bottom action bar is hidden (so the host page can render its own). */
   hideActionBar?: boolean;
+  /** When true, hide the filter chip row inside the toolbar (used when the host renders a sidebar). */
+  hideToolbarFilters?: boolean;
 }
 
 const colors: Record<PriceCategory, string> = {
@@ -177,6 +183,93 @@ const sectorsV2: Sector[] = [
   { id: 'ga-floor', name: 'Standing GA', localName: 'Seisuala', x: 220, y: 512, width: 460, height: 100, rotation: 0, priceCategory: 'ga', startingPrice: 79, totalSeats: 220, availableSeats: 156, isGA: true },
   // Hidden access-code sector
   { id: 'crew-hidden', name: 'Press / Crew Hold', localName: 'Press / Crew', x: 100, y: 632, width: 220, height: 64, rotation: 0, priceCategory: 'vip', startingPrice: 0, totalSeats: 24, availableSeats: 24, locked: true },
+];
+
+// v3: curved fan layout matching the Ticketmaster Palace Theatre overview.
+// Paths and decorations are derived from section_map.svg — viewBox 1280x900,
+// stage on the LEFT, three concentric sections sweeping to the right.
+const V3_CENTER = { cx: 450, cy: 0 };
+function polarPoint(cx: number, cy: number, r: number, deg: number) {
+  const rad = (deg * Math.PI) / 180;
+  return { x: cx + r * Math.sin(rad), y: cy + r * Math.cos(rad) };
+}
+function wedgePath(
+  cx: number,
+  cy: number,
+  innerR: number,
+  outerR: number,
+  startDeg: number,
+  endDeg: number
+): string {
+  const p1 = polarPoint(cx, cy, innerR, startDeg);
+  const p2 = polarPoint(cx, cy, innerR, endDeg);
+  const p3 = polarPoint(cx, cy, outerR, endDeg);
+  const p4 = polarPoint(cx, cy, outerR, startDeg);
+  const largeArc = Math.abs(endDeg - startDeg) > 180 ? 1 : 0;
+  return [
+    `M ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}`,
+    `A ${innerR} ${innerR} 0 ${largeArc} 1 ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`,
+    `L ${p3.x.toFixed(1)} ${p3.y.toFixed(1)}`,
+    `A ${outerR} ${outerR} 0 ${largeArc} 0 ${p4.x.toFixed(1)} ${p4.y.toFixed(1)}`,
+    'Z',
+  ].join(' ');
+}
+function wedgeCentroid(cx: number, cy: number, innerR: number, outerR: number, startDeg: number, endDeg: number) {
+  const midDeg = (startDeg + endDeg) / 2;
+  const midR = (innerR + outerR) / 2;
+  return polarPoint(cx, cy, midR, midDeg);
+}
+// v3 sectors derived from section_map.svg — 3 main sections in a fan layout.
+const sectorsV3: Sector[] = [
+  {
+    id: 'orchestra',
+    name: 'Orchestra',
+    localName: 'Orchestra',
+    // bounding rect for label / drill-down — centroid ≈ (330, 446)
+    x: 200, y: 380, width: 280, height: 100, rotation: 0,
+    priceCategory: 'standard',
+    startingPrice: 149,
+    totalSeats: 280,
+    availableSeats: 215,
+    accessible: true,
+    path: 'M60 267 L240 151 L599 151 C640 284 641 501 599 730 L240 730 L60 614 C88 498 87 383 60 267 Z',
+  },
+  {
+    id: 'mezzanine',
+    name: 'Mezzanine',
+    localName: 'Mezzanine',
+    x: 690, y: 380, width: 220, height: 100, rotation: 0,
+    priceCategory: 'premium',
+    startingPrice: 199,
+    totalSeats: 200,
+    availableSeats: 142,
+    accessible: true,
+    path: 'M625 151 L946 151 C998 279 1002 528 946 730 L624 730 C686 574 698 311 625 151 Z',
+  },
+  {
+    id: 'balcony',
+    name: 'Balcony',
+    localName: 'Balcony',
+    x: 980, y: 380, width: 180, height: 100, rotation: 0,
+    priceCategory: 'balcony',
+    startingPrice: 99,
+    totalSeats: 148,
+    availableSeats: 96,
+    path: 'M967 151 L1148 151 C1218 300 1220 575 1148 730 L967 730 C1049 574 1057 312 967 151 Z',
+  },
+  // Hidden press / crew sector — small wedge tucked at the back
+  {
+    id: 'crew-hidden',
+    name: 'Press / Crew Hold',
+    localName: 'Press / Crew',
+    x: 1180, y: 80, width: 80, height: 60, rotation: 0,
+    priceCategory: 'vip',
+    startingPrice: 0,
+    totalSeats: 24,
+    availableSeats: 24,
+    locked: true,
+    path: 'M1170 90 L1240 90 Q 1262 90 1262 110 L 1262 150 Q 1262 165 1240 165 L 1170 165 Z',
+  },
 ];
 
 function generateSeats(sector: Sector): Seat[] {
@@ -233,11 +326,12 @@ function formatTimer(seconds: number) {
 }
 
 export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
-  { selectedSeats = [], onSelectionChange, filters, onFiltersChange, variant = 'v1', accessCodeLabel = 'Access code', onMapStateChange, hideActionBar = false }: VenueMapProps,
+  { selectedSeats = [], onSelectionChange, filters, onFiltersChange, variant = 'v1', accessCodeLabel = 'Access code', onMapStateChange, hideActionBar = false, hideToolbarFilters = false }: VenueMapProps,
   ref
 ) {
   const gridLayout = variant === 'v2' || variant === 'v3';
-  const sectors = gridLayout ? sectorsV2 : sectorsV1;
+  const fanLayout = variant === 'v3';
+  const sectors = fanLayout ? sectorsV3 : gridLayout ? sectorsV2 : sectorsV1;
   const keyboardNav = variant === 'v3';
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -261,6 +355,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
 
   const seats = useMemo(() => (selectedSector ? generateSeats(selectedSector) : []), [selectedSector]);
   const [focusedSeatId, setFocusedSeatId] = useState<string | null>(null);
+  const [hoveredSectorId, setHoveredSectorId] = useState<string | null>(null);
   const selectedIds = new Set(selectedSeats.map((seat) => seat.id));
   const selectedTotal = selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
 
@@ -532,7 +627,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
   );
 
   const renderOverview = () => (
-    <svg width="100%" height="100%" viewBox="0 0 900 720">
+    <svg width="100%" height="100%" viewBox={fanLayout ? '0 0 1280 900' : '0 0 900 720'} preserveAspectRatio="xMidYMid meet">
       <defs>
         <linearGradient id="stageGradient" x1="0" x2="1">
           <stop offset="0%" stopColor="#e4e4e7" />
@@ -541,23 +636,65 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
         <filter id="softShadow"><feDropShadow dx="0" dy="3" stdDeviation="4" floodOpacity="0.10" /></filter>
       </defs>
 
-      <rect x="0" y="0" width="900" height="720" fill="#ffffff" />
-
-      {gridLayout ? (
+      {fanLayout ? (
         <>
-          {/* Curved proscenium-style stage at the very top */}
+          {/* v3 — logical grey hierarchy:
+              outer "outside venue" → no fill (uses the Paper white behind)
+              walls / structure     → gray-100 #f4f2f5
+              audience floor        → gray-50  #f8f8fa (subtle lift over walls)
+              stage slice           → brand dark navy #11002b */}
+          <rect width="1280" height="900" fill="#ffffff" />
+          <polygon points="0,0 330,0 640,130 1165,120 1280,360 1280,900 0,900" fill="#f4f2f5" />
+          <polygon points="0,98 96,0 285,0 620,120 620,772 310,892 108,892 0,782" fill="#f8f8fa" />
+          <polygon points="624,120 1165,120 1235,240 1235,620 1165,760 624,760" fill="#f8f8fa" />
+          {/* stage slice on the left — brand navy */}
+          <path d="M0 287 L24 287 C58 391 58 492 24 594 L0 594 Z" fill="#11002b" />
+          {/* box callouts — muted brand purple-grey instead of pure grey */}
+          <g>
+            <path d="M121 17 L294 17 L315 69 L252 68 C234 75 217 74 202 66 C176 72 152 70 137 58 C128 48 122 33 121 17 Z" fill="#84738f" />
+            <text x="217" y="33" textAnchor="middle" fontSize="11" fontWeight="700" fill="#ffffff">BALCONY</text>
+            <text x="217" y="50" textAnchor="middle" fontSize="11" fontWeight="700" fill="#ffffff">BOX RIGHT</text>
+            <path d="M130 85 L215 85 L236 136 L172 136 C150 132 136 116 130 85 Z" fill="#84738f" />
+            <text x="183" y="108" textAnchor="middle" fontSize="10" fontWeight="700" fill="#ffffff">MEZZANINE</text>
+            <text x="183" y="122" textAnchor="middle" fontSize="10" fontWeight="700" fill="#ffffff">BOX RIGHT</text>
+            <path d="M130 797 L215 797 L238 746 L171 746 C150 750 137 766 130 797 Z" fill="#84738f" />
+            <text x="184" y="768" textAnchor="middle" fontSize="10" fontWeight="700" fill="#ffffff">MEZZANINE</text>
+            <text x="184" y="782" textAnchor="middle" fontSize="10" fontWeight="700" fill="#ffffff">BOX LEFT</text>
+            <path d="M121 864 L294 864 L315 813 L253 814 C235 807 217 808 202 816 C177 810 153 813 138 824 C128 834 122 849 121 864 Z" fill="#84738f" />
+            <text x="217" y="831" textAnchor="middle" fontSize="11" fontWeight="700" fill="#ffffff">BALCONY</text>
+            <text x="217" y="848" textAnchor="middle" fontSize="11" fontWeight="700" fill="#ffffff">BOX LEFT</text>
+          </g>
+          {/* overhang guide lines — subtle, only readable on close inspection */}
+          <g>
+            <path d="M322 37 H966 V151" stroke="#c1bacb" strokeWidth="1" fill="none" />
+            <polygon points="310,37 322,30 322,44" fill="#a99db6" />
+            <text x="540" y="33" fontSize="11" fontWeight="700" fill="#84738f" letterSpacing="0.5">BALCONY OVERHANG</text>
+            <path d="M244 110 H622 V151" stroke="#c1bacb" strokeWidth="1" fill="none" />
+            <polygon points="232,110 244,103 244,117" fill="#a99db6" />
+            <text x="323" y="106" fontSize="11" fontWeight="700" fill="#84738f" letterSpacing="0.5">MEZZANINE OVERHANG</text>
+            <path d="M244 771 H622 V738" stroke="#c1bacb" strokeWidth="1" fill="none" />
+            <polygon points="232,771 244,764 244,778" fill="#a99db6" />
+            <text x="323" y="787" fontSize="11" fontWeight="700" fill="#84738f" letterSpacing="0.5">MEZZANINE OVERHANG</text>
+            <path d="M322 843 H966 V730" stroke="#c1bacb" strokeWidth="1" fill="none" />
+            <polygon points="310,843 322,836 322,850" fill="#a99db6" />
+            <text x="540" y="861" fontSize="11" fontWeight="700" fill="#84738f" letterSpacing="0.5">BALCONY OVERHANG</text>
+          </g>
+        </>
+      ) : gridLayout ? (
+        <>
+          {/* v2: curved proscenium stage at the very top */}
+          <rect x="0" y="0" width="900" height="720" fill="#ffffff" />
           <path
             d="M 220 80 Q 220 30 280 30 L 620 30 Q 680 30 680 80 L 680 80 Z"
             fill="#11002b"
           />
           <text x="450" y="62" textAnchor="middle" fill="#ffffff" fontSize="14" fontWeight="800" letterSpacing="2">STAGE</text>
-          {/* Subtle arc echoing the stage curve, behind the first row */}
           <path d="M 110 110 Q 450 86 790 110" stroke="#e9e7ed" strokeWidth="1.5" fill="none" />
-          {/* Floor edge near the front of the stage area */}
           <path d="M 220 660 Q 450 640 680 660" stroke="#f4f2f5" strokeWidth="2" fill="none" />
         </>
       ) : (
         <>
+          <rect x="0" y="0" width="900" height="720" fill="#ffffff" />
           <text x="450" y="34" textAnchor="middle" fill="#5a5062" fontSize="14" fontWeight="700">Click a section to drill down</text>
           <rect x="250" y="58" width="400" height="58" rx="18" fill="url(#stageGradient)" filter="url(#softShadow)" />
           <text x="450" y="94" textAnchor="middle" fill="white" fontSize="22" fontWeight="800">STAGE / SCREEN</text>
@@ -570,47 +707,101 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
         const disabled = sectorFiltered(sector);
         const match = matchingBySector[sector.id] ?? { available: 0, resale: 0 };
         const noMatches = !disabled && match.available === 0 && !sector.isGA;
-        const fill = disabled || noMatches ? '#d4d4d8' : colors[sector.priceCategory];
+        const isHovered = hoveredSectorId === sector.id;
+        // v3 fan layout uses the Piletilevi brand purple palette
+        const v3BaseColor = sector.id === 'mezzanine' ? '#7b5aa8' : sector.id === 'orchestra' || sector.id === 'balcony' ? '#9d85d0' : '#5a5062';
+        const v3HoverColor = sector.id === 'mezzanine' ? '#54426e' : sector.id === 'orchestra' || sector.id === 'balcony' ? '#7b5aa8' : '#5a5062';
+        const v3Color = isHovered ? v3HoverColor : v3BaseColor;
+        const fill = disabled || noMatches ? '#d4d4d8' : fanLayout ? v3Color : colors[sector.priceCategory];
         const matchRatio = Math.min(1, match.available / maxMatching);
         const tileOpacity = disabled ? 0.18 : noMatches ? 0.22 : 0.55 + matchRatio * 0.45;
+        const labelCx = sector.path ? sector.x + sector.width / 2 : sector.width / 2;
+        const labelCy = sector.path ? sector.y + sector.height / 2 : sector.height / 2;
         return (
           <g
             key={sector.id}
             role="button"
             tabIndex={0}
-            transform={`translate(${sector.x} ${sector.y}) rotate(${sector.rotation} ${sector.width / 2} ${sector.height / 2})`}
+            transform={sector.path ? undefined : `translate(${sector.x} ${sector.y}) rotate(${sector.rotation} ${sector.width / 2} ${sector.height / 2})`}
             onClick={() => openSector(sector)}
             onKeyDown={(e) => e.key === 'Enter' && openSector(sector)}
-            style={{ cursor: disabled || noMatches ? 'not-allowed' : 'pointer' }}
+            onMouseEnter={() => setHoveredSectorId(sector.id)}
+            onMouseLeave={() => setHoveredSectorId((id) => (id === sector.id ? null : id))}
+            style={{ cursor: disabled || noMatches ? 'not-allowed' : 'pointer', transition: 'opacity 150ms' }}
           >
-            <rect width={sector.width} height={sector.height} rx={gridLayout ? 14 : 12} fill={fill} opacity={tileOpacity} stroke={sector.accessible ? '#06d373' : 'transparent'} strokeWidth={gridLayout ? 1 : 1.5} filter={gridLayout ? undefined : 'url(#softShadow)'} />
-            {gridLayout ? (
+            {sector.path ? (
+              <path d={sector.path} fill={fill} opacity={tileOpacity} stroke={sector.accessible ? '#06d373' : 'transparent'} strokeWidth={fanLayout ? 2 : 1} />
+            ) : (
+              <rect width={sector.width} height={sector.height} rx={gridLayout ? 14 : 12} fill={fill} opacity={tileOpacity} stroke={sector.accessible ? '#06d373' : 'transparent'} strokeWidth={gridLayout ? 1 : 1.5} filter={gridLayout ? undefined : 'url(#softShadow)'} />
+            )}
+            {fanLayout ? (
               <>
-                <text x={sector.width / 2} y={sector.height / 2 - 2} textAnchor="middle" fill="white" fontSize="13" fontWeight="800">{sector.name}</text>
-                <text x={sector.width / 2} y={sector.height / 2 + 14} textAnchor="middle" fill="rgba(255,255,255,0.78)" fontSize="10" fontWeight="600">
+                <text x={labelCx} y={labelCy - 6} textAnchor="middle" fill="white" fontSize="30" fontWeight="700" letterSpacing="1">{sector.name.toUpperCase()}</text>
+                <text x={labelCx} y={labelCy + 22} textAnchor="middle" fill="rgba(255,255,255,0.85)" fontSize="16" fontWeight="600">
+                  {sector.locked && !unlockedCrew ? 'Code required' : `${match.available}+ tickets · from ${sector.startingPrice} PLN`}
+                </text>
+              </>
+            ) : gridLayout ? (
+              <>
+                <text x={labelCx} y={labelCy - 2} textAnchor="middle" fill="white" fontSize="13" fontWeight="800" letterSpacing="0.5">{sector.name}</text>
+                <text x={labelCx} y={labelCy + 14} textAnchor="middle" fill="rgba(255,255,255,0.85)" fontSize="10" fontWeight="600">
                   {sector.locked && !unlockedCrew ? 'Code required' : sector.isGA ? `from ${sector.startingPrice} PLN` : `${match.available} seats · from ${sector.startingPrice} PLN`}
                 </text>
               </>
             ) : (
               <>
-                <text x={sector.width / 2} y={sector.height / 2 + 1} textAnchor="middle" fill="white" fontSize="13" fontWeight="800">{sector.name}</text>
-                <text x={sector.width / 2} y={sector.height / 2 + 16} textAnchor="middle" fill="rgba(255,255,255,0.85)" fontSize="10" fontWeight="600">
+                <text x={labelCx} y={labelCy + 1} textAnchor="middle" fill="white" fontSize="13" fontWeight="800">{sector.name}</text>
+                <text x={labelCx} y={labelCy + 16} textAnchor="middle" fill="rgba(255,255,255,0.85)" fontSize="10" fontWeight="600">
                   {sector.locked && !unlockedCrew ? 'Code required' : sector.isGA ? `GA · from ${sector.startingPrice} PLN` : `${match.available} · from ${sector.startingPrice} PLN`}
                 </text>
               </>
             )}
+            {/* Resale dot: positioned at the top-right of either the bbox (path) or the local rect */}
             {match.resale > 0 && !disabled && !noMatches && (
-              <circle cx={sector.width - 18} cy={18} r="7" fill={RESALE_COLOR} stroke="white" strokeWidth="2" />
+              sector.path
+                ? <circle cx={sector.x + sector.width - 14} cy={sector.y + 14} r={fanLayout ? 10 : 7} fill={RESALE_COLOR} stroke="white" strokeWidth="2" />
+                : <circle cx={sector.width - 18} cy={18} r="7" fill={RESALE_COLOR} stroke="white" strokeWidth="2" />
             )}
-            {sector.accessible && <text x="18" y="24" fill="white" fontSize="17">♿</text>}
-            {sector.tableLayout && <text x={sector.width - 26} y="25" fill="white" fontSize="16">▦</text>}
+            {/* Accessible glyph */}
+            {sector.accessible && (
+              sector.path
+                ? <text x={sector.x + 16} y={sector.y + 24} fill="white" fontSize={fanLayout ? 22 : 17}>♿</text>
+                : <text x="18" y="24" fill="white" fontSize="17">♿</text>
+            )}
+            {sector.tableLayout && !sector.path && <text x={sector.width - 26} y="25" fill="white" fontSize="16">▦</text>}
           </g>
         );
       })}
 
-      <text x="116" y="562" fill="#9ca3af" fontSize="12">Entrance B</text>
-      <text x="725" y="562" fill="#9ca3af" fontSize="12">Stairs</text>
-      <text x="418" y="684" fill="#9ca3af" fontSize="12">Main entrance</text>
+      {fanLayout && (
+        <>
+          {/* aisles between sectors — match the "floor" colour so they read as gaps in seating */}
+          <path d="M600 151 C648 285 649 506 600 730 L624 730 C686 574 698 311 625 151 Z" fill="#f8f8fa" pointerEvents="none" />
+          <path d="M946 151 C998 279 1002 528 946 730 L967 730 C1049 574 1057 312 967 151 Z" fill="#f8f8fa" pointerEvents="none" />
+          {/* blocked overhang strips at the front of the orchestra — slightly darker than the floor */}
+          <path d="M466 643 L630 643 C621 678 610 708 599 730 L438 730 Z" fill="#e9e7ed" pointerEvents="none" />
+          <path d="M893 630 L997 630 C985 670 968 704 946 730 L846 730 C866 697 882 664 893 630 Z" fill="#e9e7ed" pointerEvents="none" />
+        </>
+      )}
+
+      {fanLayout ? null : gridLayout ? (
+        <>
+          {/* v2/v3 venue annotations — small grey labels with arrow hints */}
+          <text x="60" y="350" fill="#84738f" fontSize="11" fontWeight="600" letterSpacing="0.5">← ENTRANCE B</text>
+          <line x1="60" y1="358" x2="100" y2="358" stroke="#dbd7e2" strokeWidth="1" />
+          <text x="840" y="350" fill="#84738f" fontSize="11" fontWeight="600" letterSpacing="0.5" textAnchor="end">STAIRS →</text>
+          <line x1="800" y1="358" x2="840" y2="358" stroke="#dbd7e2" strokeWidth="1" />
+          <text x="60" y="600" fill="#84738f" fontSize="11" fontWeight="600" letterSpacing="0.5">← BAR</text>
+          <line x1="60" y1="608" x2="100" y2="608" stroke="#dbd7e2" strokeWidth="1" />
+          <text x="450" y="710" textAnchor="middle" fill="#84738f" fontSize="11" fontWeight="600" letterSpacing="0.5">MAIN ENTRANCE</text>
+        </>
+      ) : (
+        <>
+          <text x="116" y="562" fill="#9ca3af" fontSize="12">Entrance B</text>
+          <text x="725" y="562" fill="#9ca3af" fontSize="12">Stairs</text>
+          <text x="418" y="684" fill="#9ca3af" fontSize="12">Main entrance</text>
+        </>
+      )}
     </svg>
   );
 
@@ -756,7 +947,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
         </Stack>
       </Box>
 
-      <Box sx={{ px: { xs: 1, md: 1.5 }, py: 0.75, bgcolor: '#ffffff', overflowX: { xs: 'auto', md: 'visible' } }}>
+      {!hideToolbarFilters && <Box sx={{ px: { xs: 1, md: 1.5 }, py: 0.75, bgcolor: '#ffffff', overflowX: { xs: 'auto', md: 'visible' } }}>
         <Stack direction="row" spacing={0.5} alignItems="center" sx={{ flexWrap: { xs: 'nowrap', md: 'wrap' }, rowGap: 0.75, minWidth: { xs: 'max-content', md: 'auto' } }}>
           {(() => {
             const ALL_CATS: PriceCategory[] = ['vip', 'premium', 'standard', 'balcony', 'ga'];
@@ -820,7 +1011,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
             {Object.values(matchingBySector).reduce((sum, e) => sum + e.available, 0)} matching
           </Typography>
         </Stack>
-      </Box>
+      </Box>}
 
       {findOpen && (
         <Box sx={{ px: 2, py: 1.25, bgcolor: '#ffffff', borderBottom: '1px solid #e9e7ed' }}>
@@ -847,20 +1038,100 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
             {view === 'pure' ? renderPureMap() : view === 'detail' ? renderSeats() : renderOverview()}
           </Box>
 
-          <Stack spacing={1} sx={{ position: 'absolute', right: 12, top: 12, zIndex: 5 }}>
-            <IconButton onClick={() => setZoom((z) => Math.min(2.8, z + 0.25))} sx={{ bgcolor: '#ffffff', color: '#11002b', border: '1px solid #e9e7ed', '&:hover': { bgcolor: '#f4f2f5' } }}><ZoomIn /></IconButton>
-            <IconButton onClick={() => setZoom((z) => Math.max(0.7, z - 0.25))} sx={{ bgcolor: '#ffffff', color: '#11002b', border: '1px solid #e9e7ed', '&:hover': { bgcolor: '#f4f2f5' } }}><ZoomOut /></IconButton>
-            <IconButton onClick={resetMap} sx={{ bgcolor: '#ffffff', color: '#11002b', border: '1px solid #e9e7ed', '&:hover': { bgcolor: '#f4f2f5' } }}><MyLocation /></IconButton>
-          </Stack>
-
-          {zoom > 1.35 && (
-            <Box sx={{ position: 'absolute', right: 12, bottom: 86, width: 150, height: 96, bgcolor: '#ffffff', border: '1px solid #e9e7ed', borderRadius: 1, p: 1 }}>
-              <Typography variant="caption" color="text.secondary">Minimap</Typography>
-              <Box sx={{ mt: 0.5, height: 58, bgcolor: '#f8f8fa', borderRadius: 1, position: 'relative' }}>
-                <Box sx={{ position: 'absolute', left: `${45 + pan.x / 20}%`, top: `${35 + pan.y / 20}%`, width: 34, height: 22, border: '2px solid #06d373', borderRadius: 0.5 }} />
-              </Box>
+          {zoom > 1.0 && (
+            <Box
+              sx={{
+                position: 'absolute',
+                right: 16,
+                bottom: 16,
+                width: 120,
+                height: 80,
+                bgcolor: '#ffffff',
+                border: '1px solid #e9e7ed',
+                borderRadius: '8px',
+                boxShadow: '0 4px 16px rgba(17,0,43,0.08), 0 1px 3px rgba(17,0,43,0.06)',
+                overflow: 'hidden',
+                zIndex: 5,
+              }}
+            >
+              <svg width="100%" height="100%" viewBox={fanLayout ? '0 0 1280 900' : '0 0 900 720'} preserveAspectRatio="xMidYMid meet">
+                <rect width="100%" height="100%" fill={fanLayout ? '#e7e7e7' : '#f8f8fa'} />
+                {/* Stage marker */}
+                {fanLayout ? (
+                  <path d="M0 287 L24 287 C58 391 58 492 24 594 L0 594 Z" fill="#222" />
+                ) : (
+                  <rect x={gridLayout ? 220 : 250} y={gridLayout ? 30 : 58} width={gridLayout ? 460 : 400} height={gridLayout ? 50 : 58} rx="8" fill="#11002b" />
+                )}
+                {/* Sector thumbnails */}
+                {visibleSectors.map((sector) => (
+                  sector.path ? (
+                    <path
+                      key={sector.id}
+                      d={sector.path}
+                      fill={sector.id === 'mezzanine' ? '#7b5aa8' : sector.id === 'orchestra' || sector.id === 'balcony' ? '#9d85d0' : '#5a5062'}
+                      opacity={0.85}
+                    />
+                  ) : (
+                    <rect
+                      key={sector.id}
+                      x={sector.x}
+                      y={sector.y}
+                      width={sector.width}
+                      height={sector.height}
+                      rx={gridLayout ? 14 : 12}
+                      transform={sector.rotation ? `rotate(${sector.rotation} ${sector.x + sector.width / 2} ${sector.y + sector.height / 2})` : undefined}
+                      fill={colors[sector.priceCategory]}
+                      opacity={0.85}
+                    />
+                  )
+                ))}
+                {/* Viewport indicator */}
+                {(() => {
+                  const vbCanvasW = fanLayout ? 1280 : 900;
+                  const vbCanvasH = fanLayout ? 900 : 720;
+                  const vbW = vbCanvasW / zoom;
+                  const vbH = vbCanvasH / zoom;
+                  const cx = vbCanvasW / 2 - pan.x * (vbCanvasW / 700);
+                  const cy = vbCanvasH / 2 - pan.y * (vbCanvasH / 540);
+                  const x = Math.max(0, Math.min(vbCanvasW - vbW, cx - vbW / 2));
+                  const y = Math.max(0, Math.min(vbCanvasH - vbH, cy - vbH / 2));
+                  return (
+                    <rect
+                      x={x}
+                      y={y}
+                      width={vbW}
+                      height={vbH}
+                      fill="rgba(123,90,168,0.22)"
+                      stroke="#7b5aa8"
+                      strokeWidth={6}
+                      rx="6"
+                    />
+                  );
+                })()}
+              </svg>
             </Box>
           )}
+
+          <Stack
+            spacing={0.75}
+            sx={{
+              position: 'absolute',
+              right: zoom > 1.0 ? 148 : 16,
+              bottom: 16,
+              zIndex: 5,
+              transition: 'right 200ms',
+            }}
+          >
+            <IconButton onClick={resetMap} aria-label="Reset zoom" sx={{ width: 36, height: 36, bgcolor: '#ffffff', color: '#11002b', border: '1px solid #e9e7ed', boxShadow: '0 1px 3px rgba(17,0,43,0.06)', '&:hover': { bgcolor: '#f4f2f5' } }}>
+              <MyLocation fontSize="small" />
+            </IconButton>
+            <IconButton onClick={() => setZoom((z) => Math.min(2.8, z + 0.25))} aria-label="Zoom in" sx={{ width: 36, height: 36, bgcolor: '#ffffff', color: '#11002b', border: '1px solid #e9e7ed', boxShadow: '0 1px 3px rgba(17,0,43,0.06)', '&:hover': { bgcolor: '#f4f2f5' } }}>
+              <ZoomIn fontSize="small" />
+            </IconButton>
+            <IconButton onClick={() => setZoom((z) => Math.max(0.7, z - 0.25))} aria-label="Zoom out" sx={{ width: 36, height: 36, bgcolor: '#ffffff', color: '#11002b', border: '1px solid #e9e7ed', boxShadow: '0 1px 3px rgba(17,0,43,0.06)', '&:hover': { bgcolor: '#f4f2f5' } }}>
+              <ZoomOut fontSize="small" />
+            </IconButton>
+          </Stack>
         </Box>
 
         {view === 'detail' && selectedSector && (

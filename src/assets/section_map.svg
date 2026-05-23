@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="900" viewBox="0 0 1280 900">
+  <defs>
+    <style>
+      .label{font-family:Arial, Helvetica, sans-serif;fill:#fff;font-weight:400;letter-spacing:.5px}
+      .small{font-family:Arial, Helvetica, sans-serif;fill:#fff;font-weight:700;font-size:12px}
+      .callout{font-family:Arial, Helvetica, sans-serif;fill:#777;font-weight:700;font-size:18px}
+      .note{font-family:Arial, Helvetica, sans-serif;fill:#666;font-size:26px}
+      .line{stroke:#aaa;stroke-width:1.5;fill:none}
+      .arrow{fill:#999}
+    </style>
+  </defs>
+
+  <!-- background -->
+  <rect width="1280" height="900" fill="#e7e7e7"/>
+  <polygon points="0,0 330,0 640,130 1165,120 1280,360 1280,900 0,900" fill="#f1f1f1" opacity=".65"/>
+  <polygon points="0,98 96,0 285,0 620,120 620,772 310,892 108,892 0,782" fill="#f8f8f8"/>
+  <polygon points="624,120 1165,120 1235,240 1235,620 1165,760 624,760" fill="#f8f8f8"/>
+
+  <!-- stage / left dark slice -->
+  <path d="M0 287 L24 287 C58 391 58 492 24 594 L0 594 Z" fill="#222"/>
+
+  <!-- orchestra section -->
+  <path d="M60 267 L240 151 L599 151 C640 284 641 501 599 730 L240 730 L60 614 C88 498 87 383 60 267 Z" fill="#3158d9"/>
+
+  <!-- mezzanine section -->
+  <path d="M625 151 L946 151 C998 279 1002 528 946 730 L624 730 C686 574 698 311 625 151 Z" fill="#263f9c"/>
+
+  <!-- balcony section -->
+  <path d="M967 151 L1148 151 C1218 300 1220 575 1148 730 L967 730 C1049 574 1057 312 967 151 Z" fill="#3158d9"/>
+
+  <!-- aisles/gaps as white curved bands -->
+  <path d="M600 151 C648 285 649 506 600 730 L624 730 C686 574 698 311 625 151 Z" fill="#f8f8f8"/>
+  <path d="M946 151 C998 279 1002 528 946 730 L967 730 C1049 574 1057 312 967 151 Z" fill="#f8f8f8"/>
+
+  <!-- grey blocked/overhang areas -->
+  <path d="M466 643 L630 643 C621 678 610 708 599 730 L438 730 Z" fill="#ddd"/>
+  <path d="M893 630 L997 630 C985 670 968 704 946 730 L846 730 C866 697 882 664 893 630 Z" fill="#ddd"/>
+
+  <!-- section labels -->
+  <text x="250" y="446" class="label" font-size="38">ORCHESTRA</text>
+  <text x="775" y="446" class="label" font-size="38" text-anchor="middle">MEZZANINE</text>
+  <text x="1072" y="446" class="label" font-size="30">BALCONY</text>
+
+  <!-- upper boxes -->
+  <path d="M121 17 L294 17 L315 69 L252 68 C234 75 217 74 202 66 C176 72 152 70 137 58 C128 48 122 33 121 17 Z" fill="#888"/>
+  <text x="217" y="33" class="small" font-size="18" text-anchor="middle">BALCONY</text>
+  <text x="217" y="50" class="small" font-size="18" text-anchor="middle">BOX RIGHT</text>
+
+  <path d="M130 85 L215 85 L236 136 L172 136 C150 132 136 116 130 85 Z" fill="#888"/>
+  <text x="183" y="108" class="small" text-anchor="middle">MEZZANINE</text>
+  <text x="183" y="122" class="small" text-anchor="middle">BOX RIGHT</text>
+
+  <!-- lower boxes -->
+  <path d="M130 797 L215 797 L238 746 L171 746 C150 750 137 766 130 797 Z" fill="#888"/>
+  <text x="184" y="768" class="small" text-anchor="middle">MEZZANINE</text>
+  <text x="184" y="782" class="small" text-anchor="middle">BOX LEFT</text>
+
+  <path d="M121 864 L294 864 L315 813 L253 814 C235 807 217 808 202 816 C177 810 153 813 138 824 C128 834 122 849 121 864 Z" fill="#888"/>
+  <text x="217" y="831" class="small" font-size="18" text-anchor="middle">BALCONY</text>
+  <text x="217" y="848" class="small" font-size="18" text-anchor="middle">BOX LEFT</text>
+
+  <!-- overhang guide lines and arrows -->
+  <path class="line" d="M322 37 H966 V151"/>
+  <polygon class="arrow" points="310,37 322,30 322,44"/>
+  <text x="540" y="33" class="callout">BALCONY OVERHANG</text>
+
+  <path class="line" d="M244 110 H622 V151"/>
+  <polygon class="arrow" points="232,110 244,103 244,117"/>
+  <text x="323" y="106" class="callout">MEZZANINE OVERHANG</text>
+
+  <path class="line" d="M244 771 H622 V738"/>
+  <polygon class="arrow" points="232,771 244,764 244,778"/>
+  <text x="323" y="787" class="callout">MEZZANINE OVERHANG</text>
+
+  <path class="line" d="M322 843 H966 V730"/>
+  <polygon class="arrow" points="310,843 322,836 322,850"/>
+  <text x="540" y="861" class="callout">BALCONY OVERHANG</text>
+
+  <!-- tooltip -->
+  <g>
+    <path d="M592 378 H807 Q810 378 810 381 V419 L827 438 L810 456 V496 Q810 500 806 500 H596 Q592 500 592 496 V382 Q592 378 596 378 Z" fill="#fff" stroke="#777" stroke-width="3"/>
+    <text x="622" y="429" class="note">100+ Tickets</text>
+    <text x="622" y="466" class="note">MEZZANINE</text>
+  </g>
+</svg>
