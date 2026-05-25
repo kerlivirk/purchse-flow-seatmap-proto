@@ -220,12 +220,15 @@ function wedgeCentroid(cx: number, cy: number, innerR: number, outerR: number, s
   return polarPoint(cx, cy, midR, midDeg);
 }
 // v3 sectors derived from section_map.svg — 3 main sections in a fan layout.
-const sectorsV3: Sector[] = [
+// `seatsBBox` defines the area where seat dots get rendered when the sector is selected.
+interface V3Sector extends Sector {
+  seatsBBox?: { x: number; y: number; w: number; h: number };
+}
+const sectorsV3: V3Sector[] = [
   {
     id: 'orchestra',
     name: 'Orchestra',
     localName: 'Orchestra',
-    // bounding rect for label / drill-down — centroid ≈ (330, 446)
     x: 200, y: 380, width: 280, height: 100, rotation: 0,
     priceCategory: 'standard',
     startingPrice: 149,
@@ -233,6 +236,7 @@ const sectorsV3: Sector[] = [
     availableSeats: 215,
     accessible: true,
     path: 'M60 267 L240 151 L599 151 C640 284 641 501 599 730 L240 730 L60 614 C88 498 87 383 60 267 Z',
+    seatsBBox: { x: 90, y: 200, w: 500, h: 480 },
   },
   {
     id: 'mezzanine',
@@ -245,6 +249,7 @@ const sectorsV3: Sector[] = [
     availableSeats: 142,
     accessible: true,
     path: 'M625 151 L946 151 C998 279 1002 528 946 730 L624 730 C686 574 698 311 625 151 Z',
+    seatsBBox: { x: 650, y: 200, w: 320, h: 480 },
   },
   {
     id: 'balcony',
@@ -256,6 +261,7 @@ const sectorsV3: Sector[] = [
     totalSeats: 148,
     availableSeats: 96,
     path: 'M967 151 L1148 151 C1218 300 1220 575 1148 730 L967 730 C1049 574 1057 312 967 151 Z',
+    seatsBBox: { x: 985, y: 200, w: 200, h: 480 },
   },
   // Hidden press / crew sector — small wedge tucked at the back
   {
@@ -445,9 +451,22 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
     }
 
     setSelectedSector(sector);
-    setView('detail');
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
+    if (fanLayout) {
+      // v3: stay on the overview map but zoom in to the chosen sector.
+      // Seat dots appear inside the same SVG (rendered below).
+      const FOCUS: Record<string, { zoom: number; pan: { x: number; y: number } }> = {
+        orchestra: { zoom: 1.9, pan: { x: 180, y: 0 } },
+        mezzanine: { zoom: 1.9, pan: { x: -240, y: 0 } },
+        balcony: { zoom: 1.9, pan: { x: -460, y: 0 } },
+      };
+      const f = FOCUS[sector.id] ?? { zoom: 1.6, pan: { x: 0, y: 0 } };
+      setZoom(f.zoom);
+      setPan(f.pan);
+    } else {
+      setView('detail');
+      setZoom(1);
+      setPan({ x: 0, y: 0 });
+    }
   };
 
   const wouldCreateOrphan = (seat: Seat) => {
@@ -714,7 +733,10 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
         const v3Color = isHovered ? v3HoverColor : v3BaseColor;
         const fill = disabled || noMatches ? '#d4d4d8' : fanLayout ? v3Color : colors[sector.priceCategory];
         const matchRatio = Math.min(1, match.available / maxMatching);
-        const tileOpacity = disabled ? 0.18 : noMatches ? 0.22 : 0.55 + matchRatio * 0.45;
+        let tileOpacity = disabled ? 0.18 : noMatches ? 0.22 : 0.55 + matchRatio * 0.45;
+        // v3: when a sector is selected, fade out the others so seats can read over them
+        if (fanLayout && selectedSector && selectedSector.id !== sector.id) tileOpacity = 0.18;
+        if (fanLayout && selectedSector && selectedSector.id === sector.id) tileOpacity = 0.35;
         const labelCx = sector.path ? sector.x + sector.width / 2 : sector.width / 2;
         const labelCy = sector.path ? sector.y + sector.height / 2 : sector.height / 2;
         return (
@@ -776,11 +798,45 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
       {fanLayout && (
         <>
           {/* aisles between sectors — match the "floor" colour so they read as gaps in seating */}
-          <path d="M600 151 C648 285 649 506 600 730 L624 730 C686 574 698 311 625 151 Z" fill="#f8f8fa" pointerEvents="none" />
-          <path d="M946 151 C998 279 1002 528 946 730 L967 730 C1049 574 1057 312 967 151 Z" fill="#f8f8fa" pointerEvents="none" />
-          {/* blocked overhang strips at the front of the orchestra — slightly darker than the floor */}
-          <path d="M466 643 L630 643 C621 678 610 708 599 730 L438 730 Z" fill="#e9e7ed" pointerEvents="none" />
-          <path d="M893 630 L997 630 C985 670 968 704 946 730 L846 730 C866 697 882 664 893 630 Z" fill="#e9e7ed" pointerEvents="none" />
+          {!selectedSector && <>
+            <path d="M600 151 C648 285 649 506 600 730 L624 730 C686 574 698 311 625 151 Z" fill="#f8f8fa" pointerEvents="none" />
+            <path d="M946 151 C998 279 1002 528 946 730 L967 730 C1049 574 1057 312 967 151 Z" fill="#f8f8fa" pointerEvents="none" />
+            <path d="M466 643 L630 643 C621 678 610 708 599 730 L438 730 Z" fill="#e9e7ed" pointerEvents="none" />
+            <path d="M893 630 L997 630 C985 670 968 704 946 730 L846 730 C866 697 882 664 893 630 Z" fill="#e9e7ed" pointerEvents="none" />
+          </>}
+          {/* Seat dots overlay — shown when a v3 sector is selected (zoom-in reveal) */}
+          {selectedSector && (selectedSector as V3Sector).seatsBBox && (() => {
+            const bbox = (selectedSector as V3Sector).seatsBBox!;
+            // Source seat coordinate ranges from generateSeats (renderSeats coord space)
+            const SRC = { x0: 96, x1: 96 + 13 * 31, y0: 96, y1: 96 + 7 * 32 };
+            const project = (sx: number, sy: number) => ({
+              x: bbox.x + ((sx - SRC.x0) / (SRC.x1 - SRC.x0)) * bbox.w,
+              y: bbox.y + ((sy - SRC.y0) / (SRC.y1 - SRC.y0)) * bbox.h,
+            });
+            return (
+              <g>
+                {seats.filter((s) => !seatFiltered(s)).map((seat) => {
+                  const p = project(seat.x, seat.y);
+                  const selected = selectedIds.has(seat.id);
+                  const loading = preReserving.includes(seat.id);
+                  const failed = failedSeats.includes(seat.id);
+                  const isResale = seat.resale && seat.status === 'available';
+                  const seatFill = failed ? '#ef4444' : loading ? '#c084fc' : selected ? '#06d373' : seat.status === 'unavailable' ? '#a99db6' : seat.status === 'reserved-by-other' ? '#84738f' : '#11002b';
+                  const seatStroke = selected ? '#11002b' : isResale ? RESALE_COLOR : 'transparent';
+                  return (
+                    <g
+                      key={seat.id}
+                      onClick={() => seat.status === 'available' && reserveSeat(seat)}
+                      style={{ cursor: seat.status === 'available' ? 'pointer' : 'not-allowed' }}
+                    >
+                      <circle cx={p.x} cy={p.y} r={selected ? 7 : 6} fill={seatFill} stroke={seatStroke} strokeWidth={isResale && !selected ? 2 : 1.5} />
+                      {loading && <circle cx={p.x} cy={p.y} r="10" fill="none" stroke="#c084fc" strokeWidth="2" strokeDasharray="3 3"><animateTransform attributeName="transform" type="rotate" from={`0 ${p.x} ${p.y}`} to={`360 ${p.x} ${p.y}`} dur="1s" repeatCount="indefinite" /></circle>}
+                    </g>
+                  );
+                })}
+              </g>
+            );
+          })()}
         </>
       )}
 
@@ -886,7 +942,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#ffffff', color: '#11002b' }}>
       <Box sx={{ px: { xs: 1.25, md: 1.5 }, py: { xs: 0.5, md: 0.75 }, borderBottom: '1px solid #e9e7ed', bgcolor: '#ffffff' }}>
         <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: { xs: 'nowrap', md: 'wrap' } }}>
-          {view === 'detail' && (
+          {(view === 'detail' || (fanLayout && !!selectedSector)) && (
             isMobile ? (
               <IconButton size="small" onClick={() => { setView('overview'); setSelectedSector(null); resetMap(); }} sx={{ bgcolor: '#ffffff', border: '1px solid #e9e7ed' }}>
                 <Icon name="tailless-line-arrow-left-5" size={16} color="#11002b" />
@@ -896,7 +952,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
             )
           )}
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography sx={{ fontWeight: 800, fontSize: { xs: 13, md: 14 } }} noWrap>{view === 'overview' ? 'Venue overview' : view === 'pure' ? 'Pure map' : selectedSector?.name}</Typography>
+            <Typography sx={{ fontWeight: 800, fontSize: { xs: 13, md: 14 } }} noWrap>{selectedSector ? selectedSector.name : view === 'pure' ? 'Pure map' : 'Venue overview'}</Typography>
           </Box>
           {!isMobile && (
             <PillToggleGroup
@@ -1026,7 +1082,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
         </Box>
       )}
 
-      <Box sx={{ flex: 1, display: 'grid', gridTemplateColumns: { xs: '1fr', md: `${filtersOpen && !isMobile ? '300px ' : ''}1fr${view === 'detail' && selectedSector ? ' 340px' : ''}` }, gridTemplateRows: { xs: view === 'detail' && selectedSector ? '240px minmax(0, 1fr)' : '1fr', md: '1fr' }, minHeight: 0, overflow: 'hidden' }}>
+      <Box sx={{ flex: 1, display: 'grid', gridTemplateColumns: { xs: '1fr', md: `${filtersOpen && !isMobile ? '300px ' : ''}1fr${((view === 'detail' || (fanLayout && !!selectedSector))) && selectedSector ? ' 340px' : ''}` }, gridTemplateRows: { xs: ((view === 'detail' || (fanLayout && !!selectedSector))) && selectedSector ? '240px minmax(0, 1fr)' : '1fr', md: '1fr' }, minHeight: 0, overflow: 'hidden' }}>
         {filtersOpen && !isMobile && (
           <Box sx={{ p: 2, bgcolor: '#ffffff', color: '#11002b', borderRight: '1px solid #e9e7ed', overflow: 'auto' }}>
             {renderFilterPanel()}
@@ -1134,7 +1190,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
           </Stack>
         </Box>
 
-        {view === 'detail' && selectedSector && (
+        {(view === 'detail' || (fanLayout && !!selectedSector)) && selectedSector && (
           <Box sx={{ p: 1, pl: { xs: 1, md: 0 }, pt: { xs: 0, md: 1 }, minHeight: 0, minWidth: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <TicketList
               sector={selectedSector}

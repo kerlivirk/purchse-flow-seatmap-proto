@@ -7,6 +7,9 @@ import {
   Chip,
   Container,
   CssBaseline,
+  Dialog,
+  DialogContent,
+  DialogTitle,
   Divider,
   Drawer,
   IconButton,
@@ -29,6 +32,7 @@ import { M3Button } from './components/M3Button';
 import { Icon } from './components/Icon';
 import { V3SpecBanner } from './components/V3SpecBanner';
 import { FilterSidebar } from './components/FilterSidebar';
+import phantomPoster from '../assets/phantom-poster.png';
 import type { SelectedSeat, VenueFilters, MapHandle, MapState } from './components/VenueMap';
 import { AutoAwesome, Visibility } from '@mui/icons-material';
 
@@ -186,6 +190,7 @@ function MapLab({ variant }: { variant: 'v1' | 'v2' | 'v3' }) {
   const [timerStartedAt, setTimerStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
   const [filters, setFilters] = useState<VenueFilters>(DEFAULT_FILTERS);
+  const [filterDialogOpen, setFilterDialogOpen] = useState(false);
   const [checkoutPulse, setCheckoutPulse] = useState(false);
   const prevCountRef = useRef(0);
   const mapRef = useRef<MapHandle | null>(null);
@@ -220,13 +225,53 @@ function MapLab({ variant }: { variant: 'v1' | 'v2' | 'v3' }) {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Box sx={{ minHeight: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
-        <AppBar position="sticky" elevation={0} sx={{ bgcolor: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(16px)', borderBottom: '1px solid #d4d4d8', color: '#0a0a0a' }}>
-          <Toolbar sx={{ minHeight: { xs: 52, md: 64 }, px: { xs: 1.5, md: 3 } }}>
-            <Typography variant="h6" component="h1" sx={{ letterSpacing: -0.5, fontSize: { xs: 16, md: 20 }, mr: 2 }}>
-              TicketPro Map Lab
-            </Typography>
-            <VersionSwitch />
-            <Box sx={{ flexGrow: 1 }} />
+        <AppBar position="sticky" elevation={0} sx={{ bgcolor: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(16px)', borderBottom: '1px solid #e9e7ed', color: '#11002b' }}>
+          <Toolbar sx={{ minHeight: { xs: 56, md: 64 }, px: { xs: 1.5, md: 3 }, gap: 1.5 }}>
+            {variant === 'v3' ? (
+              <Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: 0, flex: 1 }}>
+                <Box component="img" src={phantomPoster} alt="" sx={{ width: 40, height: 40, borderRadius: 1, objectFit: 'cover', flexShrink: 0, border: '1px solid #e9e7ed' }} />
+                <Box sx={{ minWidth: 0, lineHeight: 1.1 }}>
+                  <Typography sx={{ fontFamily: '"Panel Sans", Mulish, sans-serif', fontWeight: 900, fontSize: { xs: 13, md: 16 } }} noWrap>
+                    The Phantom of the Opera
+                  </Typography>
+                  <Stack direction="row" spacing={1} alignItems="center" sx={{ color: '#5a5062', display: { xs: 'none', sm: 'flex' } }}>
+                    <Stack direction="row" spacing={0.5} alignItems="center">
+                      <Icon name="location-pin-1" size={11} color="#06d373" />
+                      <Typography variant="caption" sx={{ fontWeight: 600, fontSize: 11 }}>Gliwice Arena</Typography>
+                    </Stack>
+                    <Stack direction="row" spacing={0.5} alignItems="center">
+                      <Icon name="blank-calendar" size={11} color="#06d373" />
+                      <Typography variant="caption" sx={{ fontWeight: 600, fontSize: 11 }}>Fri, May 29 · 19:00</Typography>
+                    </Stack>
+                    <Stack direction="row" spacing={0.5} alignItems="center">
+                      <Icon name="ticket-extra" size={11} color="#06d373" />
+                      <Typography variant="caption" sx={{ fontWeight: 600, fontSize: 11 }}>290 left</Typography>
+                    </Stack>
+                  </Stack>
+                </Box>
+              </Stack>
+            ) : (
+              <>
+                <Typography variant="h6" component="h1" sx={{ letterSpacing: -0.5, fontSize: { xs: 16, md: 20 }, mr: 2 }}>
+                  TicketPro Map Lab
+                </Typography>
+                <VersionSwitch />
+                <Box sx={{ flexGrow: 1 }} />
+              </>
+            )}
+            {variant === 'v3' && (
+              <M3Button
+                buttonType="outlined"
+                size="sm"
+                rounded={false}
+                startIcon={<Icon name="filter-text" size={14} />}
+                onClick={() => setFilterDialogOpen(true)}
+                sx={{ flexShrink: 0 }}
+              >
+                {isMobile ? '' : 'Filter'}
+              </M3Button>
+            )}
+            {variant === 'v3' && <VersionSwitch />}
             {secondsLeft !== null && isMobile && (
               <Chip icon={<TimerOutlined />} label={formatTimer(secondsLeft)} size="small" sx={{ mr: 1, bgcolor: '#ddfbea', color: '#19633d', border: '1px solid #06d373', fontWeight: 800 }} />
             )}
@@ -292,29 +337,20 @@ function MapLab({ variant }: { variant: 'v1' | 'v2' | 'v3' }) {
 
         <Box component="main" sx={{ flex: 1, p: { xs: 1, md: 2 }, pb: { xs: 10, md: 9 } }}>
           <Container maxWidth="xl" disableGutters={isMobile} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {variant === 'v3' && <V3SpecBanner />}
             {variant === 'v3' ? (
-              <>
-                <EventHeader variant="v3" />
-                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2, alignItems: 'stretch' }}>
-                  <Paper elevation={0} sx={{ width: { xs: '100%', md: 300 }, flexShrink: 0, border: '1px solid #e9e7ed', borderRadius: 2, bgcolor: '#ffffff', overflow: 'hidden', alignSelf: 'flex-start' }}>
-                    <FilterSidebar filters={filters} onFiltersChange={setFilters} matchingCount={null} />
-                  </Paper>
-                  <Paper elevation={0} sx={{ flex: 1, height: { xs: 'calc(100vh - 360px)', md: 'calc(100vh - 240px)' }, minHeight: 540, border: '1px solid #e9e7ed', borderRadius: 2, overflow: 'hidden', bgcolor: '#ffffff', display: 'flex', flexDirection: 'column' }}>
-                    <VenueMap
-                      ref={mapRef}
-                      selectedSeats={selectedSeats}
-                      onSelectionChange={setSelectedSeats}
-                      filters={filters}
-                      onFiltersChange={setFilters}
-                      variant={variant}
-                      hideActionBar
-                      hideToolbarFilters={!isMobile}
-                      onMapStateChange={setMapState}
-                    />
-                  </Paper>
-                </Box>
-              </>
+              <Paper elevation={0} sx={{ height: { xs: 'calc(100vh - 130px)', md: 'calc(100vh - 145px)' }, minHeight: 480, border: '1px solid #e9e7ed', borderRadius: 2, overflow: 'hidden', bgcolor: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+                <VenueMap
+                  ref={mapRef}
+                  selectedSeats={selectedSeats}
+                  onSelectionChange={setSelectedSeats}
+                  filters={filters}
+                  onFiltersChange={setFilters}
+                  variant={variant}
+                  hideActionBar
+                  hideToolbarFilters
+                  onMapStateChange={setMapState}
+                />
+              </Paper>
             ) : (
               <>
                 <EventHeader variant={variant} />
@@ -423,6 +459,22 @@ function MapLab({ variant }: { variant: 'v1' | 'v2' | 'v3' }) {
         </Paper>
 
         <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} selectedSeats={selectedSeats} secondsLeft={secondsLeft} />
+        <Dialog
+          open={filterDialogOpen}
+          onClose={() => setFilterDialogOpen(false)}
+          fullScreen={isMobile}
+          maxWidth="xs"
+          fullWidth
+          PaperProps={{ sx: { borderRadius: { xs: 0, md: 2 } } }}
+        >
+          <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e9e7ed', py: 1.5, fontSize: 16, fontWeight: 800 }}>
+            Filters
+            <IconButton size="small" onClick={() => setFilterDialogOpen(false)} aria-label="Close filters"><Close /></IconButton>
+          </DialogTitle>
+          <DialogContent sx={{ p: 0 }}>
+            <FilterSidebar filters={filters} onFiltersChange={setFilters} matchingCount={null} />
+          </DialogContent>
+        </Dialog>
         <ReferenceGallery />
       </Box>
     </ThemeProvider>
