@@ -111,13 +111,13 @@ export function TicketList({
   return (
     <Paper
       elevation={0}
+      square
       sx={{
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
         bgcolor: '#ffffff',
-        border: '1px solid #d4d4d8',
-        borderRadius: 2,
+        borderLeft: '1px solid #e9e7ed',
         overflow: 'hidden',
       }}
     >

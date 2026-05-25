@@ -386,6 +386,16 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
   // Smoothly animated SVG viewBox for v3 zoom-to-sector
   const [animVB, setAnimVB] = useState<[number, number, number, number]>([0, 0, 1280, 900]);
   const [listSheetExpanded, setListSheetExpanded] = useState(false);
+  // v4 advanced filters: per-sector visibility toggle (empty = all sectors visible)
+  const [hiddenSectorIds, setHiddenSectorIds] = useState<Set<string>>(new Set());
+  const toggleSectorVisibility = (id: string) => {
+    setHiddenSectorIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
   const selectedIds = new Set(selectedSeats.map((seat) => seat.id));
   const selectedTotal = selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
 
@@ -636,6 +646,188 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
     setCategorySeat({ ...categorySeat, price: cat.price, selectedCategory: cat.id, selectedCategoryLabel: cat.label });
   };
 
+  const renderAdvancedFilters = () => {
+    const visibleFanSectors = sectorsV3.filter((s) => !s.locked && (s as V3Sector).seatsBBox);
+    const allOn = hiddenSectorIds.size === 0;
+    const totalAvailable = visibleFanSectors
+      .filter((s) => !hiddenSectorIds.has(s.id))
+      .reduce((sum, s) => sum + (matchingBySector[s.id]?.available ?? 0), 0);
+    return (
+      <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <Box sx={{ px: 1.5, py: 1.25, borderBottom: '1px solid #e9e7ed', flexShrink: 0 }}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Typography sx={{ fontWeight: 900, fontSize: 13, letterSpacing: 0.5 }}>ADVANCED FILTERS</Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>{totalAvailable} matching</Typography>
+          </Stack>
+        </Box>
+
+        <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
+          <Box sx={{ px: 1.5, pt: 1.5, pb: 1 }}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.75 }}>
+              <Typography variant="caption" sx={{ fontWeight: 800, color: '#5a5062', letterSpacing: 0.5 }}>SECTIONS</Typography>
+              <Box
+                component="button"
+                onClick={() => setHiddenSectorIds(new Set())}
+                disabled={allOn}
+                sx={{ background: 'transparent', border: 'none', color: allOn ? '#a99db6' : '#7b5aa8', fontWeight: 800, fontSize: 11, cursor: allOn ? 'default' : 'pointer', textDecoration: allOn ? 'none' : 'underline' }}
+              >Show all</Box>
+            </Stack>
+            <Stack spacing={0.75}>
+              {visibleFanSectors.map((s) => {
+                const v3Color = s.id === 'mezzanine' ? '#7b5aa8' : '#9d85d0';
+                const visible = !hiddenSectorIds.has(s.id);
+                const avail = matchingBySector[s.id]?.available ?? 0;
+                return (
+                  <Box
+                    key={s.id}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      px: 1,
+                      py: 0.75,
+                      borderRadius: 1.5,
+                      border: '1px solid',
+                      borderColor: visible ? v3Color : '#e9e7ed',
+                      bgcolor: visible ? `${v3Color}14` : '#fafafa',
+                      transition: 'all 150ms',
+                    }}
+                  >
+                    <Checkbox
+                      size="small"
+                      checked={visible}
+                      onChange={() => toggleSectorVisibility(s.id)}
+                      sx={{ p: 0.25, color: v3Color, '&.Mui-checked': { color: v3Color } }}
+                    />
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography sx={{ fontWeight: 800, fontSize: 13, lineHeight: 1.1 }} noWrap>{s.name}</Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                        {avail} tickets · from {s.startingPrice} PLN
+                      </Typography>
+                    </Box>
+                    <Tooltip title={`Best 2 in ${s.name}`}>
+                      <span>
+                        <IconButton
+                          size="small"
+                          disabled={!visible || avail < 2}
+                          onClick={() => { setSelectedSector(s); window.setTimeout(() => selectBestAvailable(2), 50); }}
+                          sx={{ color: v3Color, '&.Mui-disabled': { color: '#d4d4d8' } }}
+                        >
+                          <AutoAwesome fontSize="small" />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                    <IconButton
+                      size="small"
+                      onClick={() => openSector(s)}
+                      sx={{ color: '#5a5062' }}
+                      aria-label={`Open ${s.name}`}
+                    >
+                      <Icon name="tailless-line-arrow-right-5" size={14} />
+                    </IconButton>
+                  </Box>
+                );
+              })}
+            </Stack>
+          </Box>
+
+          <Divider sx={{ mx: 1.5, my: 0.5, borderColor: '#e9e7ed' }} />
+
+          <Box sx={{ px: 1.5, py: 1 }}>
+            <Typography variant="caption" sx={{ fontWeight: 800, color: '#5a5062', letterSpacing: 0.5, display: 'block', mb: 0.75 }}>TICKET TYPE</Typography>
+            <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.5 }}>
+              {(['vip', 'premium', 'standard', 'balcony', 'ga'] as PriceCategory[]).map((cat) => {
+                const active = filters.categories.includes(cat);
+                return (
+                  <Box
+                    key={cat}
+                    component="button"
+                    onClick={() => toggleCategoryFilter(cat)}
+                    sx={{
+                      px: 1.25,
+                      py: 0.5,
+                      borderRadius: 100,
+                      border: '1px solid',
+                      borderColor: active ? '#11002b' : '#e9e7ed',
+                      bgcolor: active ? '#11002b' : '#ffffff',
+                      color: active ? '#ffffff' : '#11002b',
+                      fontWeight: 700,
+                      fontSize: 11,
+                      letterSpacing: 0.3,
+                      textTransform: 'uppercase',
+                      cursor: 'pointer',
+                    }}
+                  >{cat}</Box>
+                );
+              })}
+            </Stack>
+          </Box>
+
+          <Box sx={{ px: 1.5, pb: 1 }}>
+            <Typography variant="caption" sx={{ fontWeight: 800, color: '#5a5062', letterSpacing: 0.5, display: 'block', mb: 0.5 }}>ACCESSIBILITY</Typography>
+            <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.5 }}>
+              {[
+                { key: 'accessibleOnly' as const, label: 'Accessible only' },
+                { key: 'hideLimitedView' as const, label: 'Hide limited view' },
+              ].map(({ key, label }) => {
+                const active = (filters as any)[key];
+                return (
+                  <Box
+                    key={key}
+                    component="button"
+                    onClick={() => setFilters({ ...filters, [key]: !active })}
+                    sx={{
+                      px: 1.25,
+                      py: 0.5,
+                      borderRadius: 100,
+                      border: '1px solid',
+                      borderColor: active ? '#11002b' : '#e9e7ed',
+                      bgcolor: active ? '#11002b' : '#ffffff',
+                      color: active ? '#ffffff' : '#11002b',
+                      fontWeight: 700,
+                      fontSize: 11,
+                      cursor: 'pointer',
+                    }}
+                  >{label}</Box>
+                );
+              })}
+            </Stack>
+          </Box>
+
+          <Box sx={{ px: 1.5, pb: 1 }}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.25 }}>
+              <Typography variant="caption" sx={{ fontWeight: 800, color: '#5a5062', letterSpacing: 0.5 }}>PRICE RANGE</Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
+                {filters.priceRange[0]}–{filters.priceRange[1]} PLN
+              </Typography>
+            </Stack>
+            <Slider
+              value={filters.priceRange}
+              min={0}
+              max={320}
+              onChange={(_, value) => setFilters({ ...filters, priceRange: value as [number, number] })}
+              sx={{ color: '#7b5aa8', py: 1 }}
+            />
+          </Box>
+
+          <Divider sx={{ mx: 1.5, my: 0.5, borderColor: '#e9e7ed' }} />
+
+          <Box sx={{ px: 1.5, py: 1, pb: 1.5 }}>
+            <Typography variant="caption" sx={{ fontWeight: 800, color: '#5a5062', letterSpacing: 0.5, display: 'block', mb: 0.75 }}>LEGEND</Typography>
+            <Stack spacing={0.5}>
+              {[['Available', '#11002b'], ['Selected', '#06d373'], ['Sold / locked', '#a99db6'], ['Held by others', '#84738f'], ['Resale', '#ec4899']].map(([label, color]) => (
+                <Stack key={label} direction="row" spacing={1} alignItems="center">
+                  <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: color }} />
+                  <Typography variant="caption" sx={{ color: '#5a5062', fontWeight: 600 }}>{label}</Typography>
+                </Stack>
+              ))}
+            </Stack>
+          </Box>
+        </Box>
+      </Box>
+    );
+  };
+
   const renderFilterPanel = () => (
     <>
       <Typography fontWeight={900} sx={{ mb: 0.5 }}>Advanced filters</Typography>
@@ -690,8 +882,11 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
           <polygon points="0,0 330,0 640,130 1165,120 1280,360 1280,900 0,900" fill="#f4f2f5" />
           <polygon points="0,98 96,0 285,0 620,120 620,772 310,892 108,892 0,782" fill="#f8f8fa" />
           <polygon points="624,120 1165,120 1235,240 1235,620 1165,760 624,760" fill="#f8f8fa" />
-          {/* stage slice on the left — brand navy */}
-          <path d="M0 287 L24 287 C58 391 58 492 24 594 L0 594 Z" fill="#11002b" />
+          {/* stage block on the left — brand navy with "STAGE" label so direction is always clear */}
+          <g>
+            <path d="M0 250 L42 285 C76 400 76 500 42 615 L0 650 Z" fill="#11002b" />
+            <text x="22" y="450" fill="#ffffff" fontSize="20" fontWeight="900" letterSpacing="5" textAnchor="middle" transform="rotate(-90 22 450)">STAGE</text>
+          </g>
           {/* box callouts — muted brand purple-grey instead of pure grey */}
           <g>
             <path d="M121 17 L294 17 L315 69 L252 68 C234 75 217 74 202 66 C176 72 152 70 137 58 C128 48 122 33 121 17 Z" fill="#84738f" />
@@ -765,7 +960,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
         if (fanLayout && selectedSector && selectedSector.id !== sector.id) tileOpacity = allSeatsVisible ? 0 : 0.15;
         if (isSelectedInFan) tileOpacity = 1; // very light fill, fully opaque — acts as a clean background
         // v4: in overview, render sectors as a soft outline only so the seats are the focus
-        if (allSeatsVisible && !selectedSector) tileOpacity = 0.08;
+        if (allSeatsVisible && !selectedSector) tileOpacity = hiddenSectorIds.has(sector.id) ? 0.04 : 0.08;
         const labelCx = sector.path ? sector.x + sector.width / 2 : sector.width / 2;
         const labelCy = sector.path ? sector.y + sector.height / 2 : sector.height / 2;
         return (
@@ -792,7 +987,17 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
               <rect width={sector.width} height={sector.height} rx={gridLayout ? 14 : 12} fill={fill} opacity={tileOpacity} stroke={sector.accessible ? '#06d373' : 'transparent'} strokeWidth={gridLayout ? 1 : 1.5} filter={gridLayout ? undefined : 'url(#softShadow)'} />
             )}
             {fanLayout ? (
-              !isSelectedInFan && !allSeatsVisible && (
+              isSelectedInFan ? null : allSeatsVisible ? (
+                // v4: small dark-grey sector label tucked above the seats so it stays readable
+                !hiddenSectorIds.has(sector.id) && (
+                  <g style={{ pointerEvents: 'none' }}>
+                    <text x={labelCx} y={178} textAnchor="middle" fill="#3f3146" fontSize="18" fontWeight="900" letterSpacing="1.5">{sector.name.toUpperCase()}</text>
+                    <text x={labelCx} y={196} textAnchor="middle" fill="#7a6e88" fontSize="11" fontWeight="700">
+                      {`${match.available} tickets · from ${sector.startingPrice} PLN`}
+                    </text>
+                  </g>
+                )
+              ) : (
                 <>
                   <text x={labelCx} y={labelCy - 6} textAnchor="middle" fill="white" fontSize="30" fontWeight="700" letterSpacing="1">{sector.name.toUpperCase()}</text>
                   <text x={labelCx} y={labelCy + 22} textAnchor="middle" fill="rgba(255,255,255,0.85)" fontSize="16" fontWeight="600">
@@ -844,7 +1049,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
           {/* v4 overview: render seats from every sector at once, each clipped to its own sector path */}
           {allSeatsVisible && !selectedSector && (() => {
             const SRC = { x0: 96, x1: 96 + 13 * 31, y0: 96, y1: 96 + 7 * 32 };
-            const sectorsWithSeats = sectorsV3.filter((s) => (s as V3Sector).seatsBBox && (!s.locked || unlockedCrew));
+            const sectorsWithSeats = sectorsV3.filter((s) => (s as V3Sector).seatsBBox && (!s.locked || unlockedCrew) && !hiddenSectorIds.has(s.id));
             return sectorsWithSeats.map((sector) => {
               const bbox = (sector as V3Sector).seatsBBox!;
               const project = (sx: number, sy: number) => ({
@@ -1250,6 +1455,42 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
             {view === 'pure' ? renderPureMap() : view === 'detail' ? renderSeats() : renderOverview()}
           </Box>
 
+          {/* Always-visible STAGE marker — anchored to the left of the map area so users never lose the orientation, even when zoomed in */}
+          {fanLayout && (
+            <Box
+              aria-hidden
+              sx={{
+                position: 'absolute',
+                left: { xs: 6, md: 10 },
+                top: '50%',
+                transform: 'translateY(-50%)',
+                zIndex: 4,
+                pointerEvents: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+              }}
+            >
+              <Box
+                sx={{
+                  bgcolor: '#11002b',
+                  color: '#ffffff',
+                  fontWeight: 900,
+                  fontSize: { xs: 9, md: 10 },
+                  letterSpacing: { xs: 3, md: 4 },
+                  px: { xs: 0.5, md: 0.75 },
+                  py: { xs: 1.25, md: 1.75 },
+                  borderRadius: 1,
+                  writingMode: 'vertical-rl',
+                  transform: 'rotate(180deg)',
+                  boxShadow: '0 2px 6px rgba(17,0,43,0.18)',
+                }}
+              >
+                STAGE
+              </Box>
+            </Box>
+          )}
+
           {(zoom > 1.0 || (fanLayout && !!selectedSector)) && (
             <Box
               sx={{
@@ -1348,7 +1589,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
         </Box>
 
         {(view === 'detail' || (fanLayout && !!selectedSector)) && selectedSector && !isMobile && (
-          <Box sx={{ p: 1, pl: 0, pt: 1, minHeight: 0, minWidth: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <Box sx={{ minHeight: 0, minWidth: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <TicketList
               sector={selectedSector}
               seats={seats.filter((s) => !seatFiltered(s))}
@@ -1360,24 +1601,10 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
           </Box>
         )}
 
-        {/* v4 desktop overview: stack one TicketList per sector so all seats are listed alongside the map */}
+        {/* v4 desktop overview: advanced filter panel (section toggles + filters + legend) */}
         {allSeatsVisible && !selectedSector && !isMobile && (
-          <Box sx={{ p: 1, pl: 0, pt: 1, minHeight: 0, minWidth: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
-            <Stack spacing={1} sx={{ minHeight: 'min-content' }}>
-              {sectorsV3
-                .filter((s) => !s.locked && (s as V3Sector).seatsBBox)
-                .map((s) => (
-                  <Box key={s.id} sx={{ height: 320, flexShrink: 0 }}>
-                    <TicketList
-                      sector={s}
-                      seats={seats.filter((seat) => seat.sectorId === s.id && !seatFiltered(seat))}
-                      selectedIds={selectedIds}
-                      onReserve={reserveSeat}
-                      resaleColor={RESALE_COLOR}
-                    />
-                  </Box>
-                ))}
-            </Stack>
+          <Box sx={{ minHeight: 0, minWidth: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderLeft: '1px solid #e9e7ed', bgcolor: '#ffffff' }}>
+            {renderAdvancedFilters()}
           </Box>
         )}
       </Box>
