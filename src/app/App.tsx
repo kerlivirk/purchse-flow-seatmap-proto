@@ -203,7 +203,7 @@ function CartDrawer({
 
 function VersionSwitch() {
   const { pathname } = useLocation();
-  const current = pathname.startsWith('/v3') ? 'v3' : pathname.startsWith('/v2') ? 'v2' : 'v1';
+  const current = pathname.startsWith('/v4') ? 'v4' : pathname.startsWith('/v3') ? 'v3' : pathname.startsWith('/v2') ? 'v2' : 'v1';
   const baseSx = {
     px: 1.5,
     py: 0.5,
@@ -222,11 +222,12 @@ function VersionSwitch() {
       <Box component={Link} to="/" sx={{ ...baseSx, ...(current === 'v1' ? active : {}) }}>v1</Box>
       <Box component={Link} to="/v2" sx={{ ...baseSx, ...(current === 'v2' ? active : {}) }}>v2</Box>
       <Box component={Link} to="/v3" sx={{ ...baseSx, ...(current === 'v3' ? active : {}) }}>v3</Box>
+      <Box component={Link} to="/v4" sx={{ ...baseSx, ...(current === 'v4' ? active : {}) }}>v4</Box>
     </Stack>
   );
 }
 
-function MapLab({ variant }: { variant: 'v1' | 'v2' | 'v3' }) {
+function MapLab({ variant }: { variant: 'v1' | 'v2' | 'v3' | 'v4' }) {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [selectedSeats, setSelectedSeats] = useState<SelectedSeat[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
@@ -311,7 +312,7 @@ function MapLab({ variant }: { variant: 'v1' | 'v2' | 'v3' }) {
       <Box sx={{ minHeight: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
         <AppBar position="sticky" elevation={0} sx={{ bgcolor: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(16px)', borderBottom: '1px solid #e9e7ed', color: '#11002b' }}>
           <Toolbar sx={{ minHeight: { xs: 56, md: 64 }, px: { xs: 1.5, md: 3 }, gap: 1.5 }}>
-            {variant === 'v3' ? (
+            {(variant === 'v3' || variant === 'v4') ? (
               <Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: 0, flex: 1 }}>
                 <Box component="img" src={phantomPoster} alt="" sx={{ width: 40, height: 40, borderRadius: 1, objectFit: 'cover', flexShrink: 0, border: '1px solid #e9e7ed' }} />
                 <Box sx={{ minWidth: 0, lineHeight: 1.1 }}>
@@ -343,7 +344,7 @@ function MapLab({ variant }: { variant: 'v1' | 'v2' | 'v3' }) {
                 <Box sx={{ flexGrow: 1 }} />
               </>
             )}
-            {variant === 'v3' && (
+            {(variant === 'v3' || variant === 'v4') && (
               <Tooltip title={simulateOthers ? 'Stop simulating other users' : 'Simulate other users claiming seats'}>
                 <IconButton
                   size="small"
@@ -361,7 +362,7 @@ function MapLab({ variant }: { variant: 'v1' | 'v2' | 'v3' }) {
                 </IconButton>
               </Tooltip>
             )}
-            {variant === 'v3' && (
+            {(variant === 'v3' || variant === 'v4') && (
               <M3Button
                 buttonType="outlined"
                 size="sm"
@@ -373,7 +374,7 @@ function MapLab({ variant }: { variant: 'v1' | 'v2' | 'v3' }) {
                 {isMobile ? '' : 'Filter'}
               </M3Button>
             )}
-            {variant === 'v3' && <VersionSwitch />}
+            {(variant === 'v3' || variant === 'v4') && <VersionSwitch />}
             {secondsLeft !== null && isMobile && (
               <Chip icon={<TimerOutlined />} label={formatTimer(secondsLeft)} size="small" sx={{ mr: 1, bgcolor: '#ddfbea', color: '#19633d', border: '1px solid #06d373', fontWeight: 800 }} />
             )}
@@ -439,7 +440,7 @@ function MapLab({ variant }: { variant: 'v1' | 'v2' | 'v3' }) {
 
         <Box component="main" sx={{ flex: 1, p: { xs: 1, md: 2 }, pb: { xs: 10, md: 9 } }}>
           <Container maxWidth="xl" disableGutters={isMobile} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {variant === 'v3' ? (
+            {(variant === 'v3' || variant === 'v4') ? (
               <Paper elevation={0} sx={{ height: { xs: 'calc(100vh - 130px)', md: 'calc(100vh - 145px)' }, minHeight: 480, border: '1px solid #e9e7ed', borderRadius: 2, overflow: 'hidden', bgcolor: '#ffffff', display: 'flex', flexDirection: 'column' }}>
                 <VenueMap
                   ref={mapRef}
@@ -616,6 +617,7 @@ function MapLab({ variant }: { variant: 'v1' | 'v2' | 'v3' }) {
 export default function App() {
   return (
     <Routes>
+      <Route path="/v4" element={<MapLab variant="v4" />} />
       <Route path="/v3" element={<MapLab variant="v3" />} />
       <Route path="/v2" element={<MapLab variant="v2" />} />
       <Route path="*" element={<MapLab variant="v1" />} />

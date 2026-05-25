@@ -138,7 +138,7 @@ interface VenueMapProps {
   filters: VenueFilters;
   onFiltersChange: (next: VenueFilters) => void;
   /** v1 = curved/realistic layout. v2 = grid-aligned. v3 = grid + keyboard nav (must-haves build). */
-  variant?: 'v1' | 'v2' | 'v3';
+  variant?: 'v1' | 'v2' | 'v3' | 'v4';
   /** Override the access-code field label (e.g. "Press code", "Sponsor code"). Defaults to "Access code". */
   accessCodeLabel?: string;
   /** Optional callback fired when the internal map state changes (selected sector, view, etc.). */
@@ -343,10 +343,11 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
   { selectedSeats = [], onSelectionChange, filters, onFiltersChange, variant = 'v1', accessCodeLabel = 'Access code', onMapStateChange, hideActionBar = false, hideToolbarFilters = false }: VenueMapProps,
   ref
 ) {
-  const gridLayout = variant === 'v2' || variant === 'v3';
-  const fanLayout = variant === 'v3';
+  const gridLayout = variant === 'v2' || variant === 'v3' || variant === 'v4';
+  const fanLayout = variant === 'v3' || variant === 'v4';
+  const allSeatsVisible = variant === 'v4';
   const sectors = fanLayout ? sectorsV3 : gridLayout ? sectorsV2 : sectorsV1;
-  const keyboardNav = variant === 'v3';
+  const keyboardNav = variant === 'v3' || variant === 'v4';
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [view, setView] = useState<'overview' | 'pure' | 'detail'>('overview');
@@ -367,7 +368,17 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
     onFiltersChange(typeof next === 'function' ? next(filters) : next);
   };
 
-  const seats = useMemo(() => (selectedSector ? generateSeats(selectedSector) : []), [selectedSector]);
+  const seats = useMemo(() => {
+    if (selectedSector) return generateSeats(selectedSector);
+    if (allSeatsVisible) {
+      // v4: pre-generate seats for every non-locked sector so the overview shows them all
+      return sectorsV3
+        .filter((s) => !s.locked && (s as V3Sector).seatsBBox)
+        .flatMap((s) => generateSeats(s));
+    }
+    return [];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSector, allSeatsVisible]);
   const [focusedSeatId, setFocusedSeatId] = useState<string | null>(null);
   const [hoveredSectorId, setHoveredSectorId] = useState<string | null>(null);
   const [dynamicReservedByOthers, setDynamicReservedByOthers] = useState<Set<string>>(new Set());
@@ -579,7 +590,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
   }, [keyboardNav, view, seats, focusedSeatId]);
 
   const selectBestAvailable = (count: number) => {
-    if (!selectedSector) {
+    if (!selectedSector && !allSeatsVisible) {
       const best = visibleSectors.find((s) => !s.isGA && !sectorFiltered(s) && s.availableSeats > 0) ?? visibleSectors[0];
       if (best) openSector(best);
       setSnackbar('Open a sector first, then Best Available will reserve seats in that section.');
@@ -648,7 +659,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
       <Typography variant="caption" color="text.secondary">Prototype codes: CREW, PRESS, PHANTOM</Typography>
       <Divider sx={{ my: 2, borderColor: '#e9e7ed' }} />
       <Typography fontWeight={800} sx={{ mb: 1 }}>Legend</Typography>
-      {[['Available', '#06d373'], ['Selected', '#11002b'], ['Sold/locked', '#52525b'], ['Resale', '#ec4899']].map(([label, color]) => <Stack key={label} direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}><Box sx={{ width: 13, height: 13, borderRadius: '50%', bgcolor: color }} /><Typography variant="caption">{label}</Typography></Stack>)}
+      {[['Available', '#11002b'], ['Selected', '#06d373'], ['Sold / locked', '#a99db6'], ['Held by others', '#84738f'], ['Resale', '#ec4899']].map(([label, color]) => <Stack key={label} direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}><Box sx={{ width: 13, height: 13, borderRadius: '50%', bgcolor: color }} /><Typography variant="caption">{label}</Typography></Stack>)}
     </>
   );
 
@@ -751,8 +762,10 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
         const matchRatio = Math.min(1, match.available / maxMatching);
         let tileOpacity = disabled ? 0.18 : noMatches ? 0.22 : 0.55 + matchRatio * 0.45;
         // v3: when a sector is selected, fade out the others so seats can read over them
-        if (fanLayout && selectedSector && selectedSector.id !== sector.id) tileOpacity = 0.15;
+        if (fanLayout && selectedSector && selectedSector.id !== sector.id) tileOpacity = allSeatsVisible ? 0 : 0.15;
         if (isSelectedInFan) tileOpacity = 1; // very light fill, fully opaque — acts as a clean background
+        // v4: in overview, render sectors as a soft outline only so the seats are the focus
+        if (allSeatsVisible && !selectedSector) tileOpacity = 0.08;
         const labelCx = sector.path ? sector.x + sector.width / 2 : sector.width / 2;
         const labelCy = sector.path ? sector.y + sector.height / 2 : sector.height / 2;
         return (
@@ -779,7 +792,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
               <rect width={sector.width} height={sector.height} rx={gridLayout ? 14 : 12} fill={fill} opacity={tileOpacity} stroke={sector.accessible ? '#06d373' : 'transparent'} strokeWidth={gridLayout ? 1 : 1.5} filter={gridLayout ? undefined : 'url(#softShadow)'} />
             )}
             {fanLayout ? (
-              !isSelectedInFan && (
+              !isSelectedInFan && !allSeatsVisible && (
                 <>
                   <text x={labelCx} y={labelCy - 6} textAnchor="middle" fill="white" fontSize="30" fontWeight="700" letterSpacing="1">{sector.name.toUpperCase()}</text>
                   <text x={labelCx} y={labelCy + 22} textAnchor="middle" fill="rgba(255,255,255,0.85)" fontSize="16" fontWeight="600">
@@ -828,6 +841,55 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
             <path d="M466 643 L630 643 C621 678 610 708 599 730 L438 730 Z" fill="#e9e7ed" pointerEvents="none" />
             <path d="M893 630 L997 630 C985 670 968 704 946 730 L846 730 C866 697 882 664 893 630 Z" fill="#e9e7ed" pointerEvents="none" />
           </>}
+          {/* v4 overview: render seats from every sector at once, each clipped to its own sector path */}
+          {allSeatsVisible && !selectedSector && (() => {
+            const SRC = { x0: 96, x1: 96 + 13 * 31, y0: 96, y1: 96 + 7 * 32 };
+            const sectorsWithSeats = sectorsV3.filter((s) => (s as V3Sector).seatsBBox && (!s.locked || unlockedCrew));
+            return sectorsWithSeats.map((sector) => {
+              const bbox = (sector as V3Sector).seatsBBox!;
+              const project = (sx: number, sy: number) => ({
+                x: bbox.x + ((sx - SRC.x0) / (SRC.x1 - SRC.x0)) * bbox.w,
+                y: bbox.y + ((sy - SRC.y0) / (SRC.y1 - SRC.y0)) * bbox.h,
+              });
+              const sectorSeats = seats.filter((s) => s.sectorId === sector.id && !seatFiltered(s));
+              return (
+                <g
+                  key={`overview-${sector.id}`}
+                  clipPath={`url(#sectorClip-${sector.id})`}
+                  onClick={() => openSector(sector)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {/* invisible hit area so users can click empty parts of the sector to zoom */}
+                  <path d={sector.path!} fill="transparent" />
+                  {sectorSeats.map((seat) => {
+                    const p = project(seat.x, seat.y);
+                    const selected = selectedIds.has(seat.id);
+                    const loading = preReserving.includes(seat.id);
+                    const failed = failedSeats.includes(seat.id);
+                    const claimedByOther = dynamicReservedByOthers.has(seat.id) || seat.status === 'reserved-by-other';
+                    const flashing = flashSeats.has(seat.id);
+                    const isResale = seat.resale && seat.status === 'available' && !claimedByOther;
+                    const effectivelyAvailable = seat.status === 'available' && !claimedByOther;
+                    const seatFill = flashing ? '#ff0032' : failed ? '#ef4444' : loading ? '#c084fc' : selected ? '#06d373' : seat.status === 'unavailable' ? '#a99db6' : claimedByOther ? '#84738f' : '#11002b';
+                    const seatStroke = selected ? '#11002b' : isResale ? RESALE_COLOR : 'transparent';
+                    return (
+                      <g
+                        key={seat.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (effectivelyAvailable) reserveSeat(seat);
+                        }}
+                        style={{ cursor: effectivelyAvailable ? 'pointer' : 'not-allowed', transition: 'fill 200ms' }}
+                      >
+                        <circle cx={p.x} cy={p.y} r={selected ? 4.5 : 3.5} fill={seatFill} stroke={seatStroke} strokeWidth={isResale && !selected ? 1.2 : 1} />
+                        {flashing && <circle cx={p.x} cy={p.y} r="7" fill="none" stroke="#ff0032" strokeWidth="1.5" opacity="0.6" />}
+                      </g>
+                    );
+                  })}
+                </g>
+              );
+            });
+          })()}
           {/* Seat dots overlay — shown when a v3 sector is selected (zoom-in reveal) */}
           {selectedSector && (selectedSector as V3Sector).seatsBBox && (() => {
             const bbox = (selectedSector as V3Sector).seatsBBox!;
@@ -962,7 +1024,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
     buyFullTable,
     clearBasket: () => updateSelection([]),
     claimRandomSeat: () => {
-      if (!selectedSector) return null;
+      if (!selectedSector && !allSeatsVisible) return null;
       // Pick a random available seat in the open sector that isn't already in someone else's set,
       // isn't pre-reserving, and isn't already in the user's cart.
       const pool = seats.filter((s) =>
@@ -1176,7 +1238,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
         </Box>
       )}
 
-      <Box sx={{ flex: 1, display: 'grid', gridTemplateColumns: { xs: '1fr', md: `${filtersOpen && !isMobile ? '300px ' : ''}1fr${((view === 'detail' || (fanLayout && !!selectedSector))) && selectedSector ? ' 340px' : ''}` }, gridTemplateRows: '1fr', minHeight: 0, overflow: 'hidden' }}>
+      <Box sx={{ flex: 1, display: 'grid', gridTemplateColumns: { xs: '1fr', md: `${filtersOpen && !isMobile ? '300px ' : ''}1fr${(((view === 'detail' || (fanLayout && !!selectedSector))) && selectedSector) || (allSeatsVisible && !isMobile) ? ' 340px' : ''}` }, gridTemplateRows: '1fr', minHeight: 0, overflow: 'hidden' }}>
         {filtersOpen && !isMobile && (
           <Box sx={{ p: 2, bgcolor: '#ffffff', color: '#11002b', borderRight: '1px solid #e9e7ed', overflow: 'auto' }}>
             {renderFilterPanel()}
@@ -1295,6 +1357,27 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
               onBestInSection={selectBestAvailable}
               resaleColor={RESALE_COLOR}
             />
+          </Box>
+        )}
+
+        {/* v4 desktop overview: stack one TicketList per sector so all seats are listed alongside the map */}
+        {allSeatsVisible && !selectedSector && !isMobile && (
+          <Box sx={{ p: 1, pl: 0, pt: 1, minHeight: 0, minWidth: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
+            <Stack spacing={1} sx={{ minHeight: 'min-content' }}>
+              {sectorsV3
+                .filter((s) => !s.locked && (s as V3Sector).seatsBBox)
+                .map((s) => (
+                  <Box key={s.id} sx={{ height: 320, flexShrink: 0 }}>
+                    <TicketList
+                      sector={s}
+                      seats={seats.filter((seat) => seat.sectorId === s.id && !seatFiltered(seat))}
+                      selectedIds={selectedIds}
+                      onReserve={reserveSeat}
+                      resaleColor={RESALE_COLOR}
+                    />
+                  </Box>
+                ))}
+            </Stack>
           </Box>
         )}
       </Box>
