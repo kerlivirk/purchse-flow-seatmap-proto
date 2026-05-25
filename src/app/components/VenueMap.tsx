@@ -374,6 +374,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
   const [flashSeats, setFlashSeats] = useState<Set<string>>(new Set());
   // Smoothly animated SVG viewBox for v3 zoom-to-sector
   const [animVB, setAnimVB] = useState<[number, number, number, number]>([0, 0, 1280, 900]);
+  const [listSheetExpanded, setListSheetExpanded] = useState(false);
   const selectedIds = new Set(selectedSeats.map((seat) => seat.id));
   const selectedTotal = selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
 
@@ -999,6 +1000,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
       view,
       tableLayoutAvailable: !!selectedSector?.tableLayout,
     });
+    setListSheetExpanded(false);
   }, [selectedSector, view, onMapStateChange]);
 
   // Animate the v3 SVG viewBox between full venue and the selected sector's focus rectangle.
@@ -1031,7 +1033,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
   }, [fanLayout, selectedSector?.id]);
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#ffffff', color: '#11002b' }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#ffffff', color: '#11002b', position: 'relative' }}>
       <Box sx={{ px: { xs: 1.25, md: 1.5 }, py: { xs: 0.5, md: 0.75 }, borderBottom: '1px solid #e9e7ed', bgcolor: '#ffffff' }}>
         <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: { xs: 'nowrap', md: 'wrap' } }}>
           {(view === 'detail' || (fanLayout && !!selectedSector)) && (
@@ -1174,7 +1176,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
         </Box>
       )}
 
-      <Box sx={{ flex: 1, display: 'grid', gridTemplateColumns: { xs: '1fr', md: `${filtersOpen && !isMobile ? '300px ' : ''}1fr${((view === 'detail' || (fanLayout && !!selectedSector))) && selectedSector ? ' 340px' : ''}` }, gridTemplateRows: { xs: ((view === 'detail' || (fanLayout && !!selectedSector))) && selectedSector ? '55vh minmax(0, 1fr)' : '1fr', md: '1fr' }, minHeight: 0, overflow: 'hidden' }}>
+      <Box sx={{ flex: 1, display: 'grid', gridTemplateColumns: { xs: '1fr', md: `${filtersOpen && !isMobile ? '300px ' : ''}1fr${((view === 'detail' || (fanLayout && !!selectedSector))) && selectedSector ? ' 340px' : ''}` }, gridTemplateRows: '1fr', minHeight: 0, overflow: 'hidden' }}>
         {filtersOpen && !isMobile && (
           <Box sx={{ p: 2, bgcolor: '#ffffff', color: '#11002b', borderRight: '1px solid #e9e7ed', overflow: 'auto' }}>
             {renderFilterPanel()}
@@ -1283,8 +1285,8 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
           </Stack>
         </Box>
 
-        {(view === 'detail' || (fanLayout && !!selectedSector)) && selectedSector && (
-          <Box sx={{ p: 1, pl: { xs: 1, md: 0 }, pt: { xs: 0, md: 1 }, minHeight: 0, minWidth: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {(view === 'detail' || (fanLayout && !!selectedSector)) && selectedSector && !isMobile && (
+          <Box sx={{ p: 1, pl: 0, pt: 1, minHeight: 0, minWidth: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <TicketList
               sector={selectedSector}
               seats={seats.filter((s) => !seatFiltered(s))}
@@ -1296,6 +1298,60 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
           </Box>
         )}
       </Box>
+
+      {/* Mobile bottom-sheet overlay: peek by default, tap to expand */}
+      {isMobile && (view === 'detail' || (fanLayout && !!selectedSector)) && selectedSector && (
+        <Box
+          sx={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: listSheetExpanded ? '65%' : 64,
+            bgcolor: '#ffffff',
+            borderTop: '1px solid #e9e7ed',
+            boxShadow: '0 -8px 24px rgba(17,0,43,0.08)',
+            zIndex: 6,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            transition: 'height 240ms ease',
+            borderTopLeftRadius: 16,
+            borderTopRightRadius: 16,
+          }}
+        >
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            onClick={() => setListSheetExpanded((v) => !v)}
+            sx={{ px: 1.5, py: 1, cursor: 'pointer', flexShrink: 0 }}
+          >
+            <Box sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: '#c1bacb', mx: 'auto', position: 'absolute', left: '50%', top: 6, transform: 'translateX(-50%)' }} />
+            <Box sx={{ flex: 1, minWidth: 0, pt: 0.5 }}>
+              <Typography sx={{ fontWeight: 800, fontSize: 13, lineHeight: 1.15 }} noWrap>
+                {selectedSector.name}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {seats.filter((s) => s.status === 'available' && !seatFiltered(s)).length} tickets available · from {selectedSector.startingPrice} PLN
+              </Typography>
+            </Box>
+            <IconButton size="small" sx={{ flexShrink: 0 }} aria-label={listSheetExpanded ? 'Collapse list' : 'Expand list'}>
+              <Icon name={listSheetExpanded ? 'tailless-line-arrow-down-5' : 'tailless-line-arrow-up-5'} size={16} color="#11002b" />
+            </IconButton>
+          </Stack>
+          <Box sx={{ flex: 1, minHeight: 0, display: listSheetExpanded ? 'flex' : 'none', flexDirection: 'column', overflow: 'hidden', p: 1, pt: 0 }}>
+            <TicketList
+              sector={selectedSector}
+              seats={seats.filter((s) => !seatFiltered(s))}
+              selectedIds={selectedIds}
+              onReserve={reserveSeat}
+              onBestInSection={selectBestAvailable}
+              resaleColor={RESALE_COLOR}
+            />
+          </Box>
+        </Box>
+      )}
 
       {!hideActionBar && <Box sx={{ px: { xs: 1.5, md: 2 }, py: { xs: 1, md: 1.25 }, bgcolor: '#ffffff', color: '#11002b', borderTop: '1px solid #e9e7ed', position: 'sticky', bottom: 0, zIndex: 4 }}>
         <Stack direction="row" spacing={1} alignItems="center">
