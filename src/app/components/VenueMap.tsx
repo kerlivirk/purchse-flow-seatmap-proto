@@ -1613,8 +1613,9 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
           </Stack>
         </Box>
 
-        {(view === 'detail' || (fanLayout && !!selectedSector)) && selectedSector && !isMobile && (
-          <Box sx={{ minHeight: 0, minWidth: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* v3 single-sector list (only when not v4 — v4 has its own multi-sector list below) */}
+        {!allSeatsVisible && (view === 'detail' || (fanLayout && !!selectedSector)) && selectedSector && !isMobile && (
+          <Box sx={{ minHeight: 0, minWidth: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderLeft: '1px solid #e9e7ed' }}>
             <TicketList
               sector={selectedSector}
               seats={seats.filter((s) => !seatFiltered(s))}
@@ -1626,12 +1627,43 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
           </Box>
         )}
 
-        {/* v4 desktop overview: advanced filter panel (section toggles + filters + legend) */}
-        {allSeatsVisible && !selectedSector && !isMobile && (
-          <Box sx={{ minHeight: 0, minWidth: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderLeft: '1px solid #e9e7ed', bgcolor: '#ffffff' }}>
-            {renderAdvancedFilters()}
-          </Box>
-        )}
+        {/* v4 desktop: one continuous scroll with every sector's full row list,
+            sticky section headers, visible in both overview and zoomed states */}
+        {allSeatsVisible && !isMobile && (() => {
+          const fanSectors = sectorsV3.filter((s) => !s.locked && (s as V3Sector).seatsBBox);
+          const totalAvailable = fanSectors.reduce((sum, s) => sum + (matchingBySector[s.id]?.available ?? 0), 0);
+          return (
+            <Box sx={{ minHeight: 0, minWidth: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderLeft: '1px solid #e9e7ed', bgcolor: '#ffffff' }}>
+              <Box sx={{ px: 2, py: 1.25, borderBottom: '1px solid #e9e7ed', bgcolor: '#ffffff', flexShrink: 0 }}>
+                <Stack direction="row" alignItems="center" justifyContent="space-between">
+                  <Typography sx={{ fontWeight: 900, fontSize: 13, letterSpacing: 0.5 }}>ALL TICKETS</Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>{totalAvailable} matching</Typography>
+                </Stack>
+              </Box>
+              <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
+                {fanSectors.map((s) => {
+                  const accent = s.id === 'mezzanine' ? '#7b5aa8' : '#9d85d0';
+                  const sectorSeats = (selectedSector?.id === s.id ? seats : generateSeats(s)).filter((seat) => !seatFiltered(seat));
+                  return (
+                    <TicketList
+                      key={s.id}
+                      flowing
+                      initiallyExpanded
+                      accentColor={accent}
+                      sector={s}
+                      seats={sectorSeats}
+                      selectedIds={selectedIds}
+                      onReserve={reserveSeat}
+                      onBestInSection={selectedSector?.id === s.id ? selectBestAvailable : undefined}
+                      onSectorClick={() => openSector(s)}
+                      resaleColor={RESALE_COLOR}
+                    />
+                  );
+                })}
+              </Box>
+            </Box>
+          );
+        })()}
       </Box>
 
       {/* Mobile bottom-sheet overlay: peek by default, tap to expand */}

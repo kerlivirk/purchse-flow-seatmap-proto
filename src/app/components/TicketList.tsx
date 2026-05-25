@@ -19,6 +19,16 @@ interface TicketListProps {
   onReserve: (seat: Seat) => void;
   onBestInSection?: (count: number) => void;
   resaleColor?: string;
+  /** When true, the list flows in document order (no inner scroll) and the
+   *  sector header is sticky. Use when stacking multiple TicketLists in a
+   *  single shared scroll container. */
+  flowing?: boolean;
+  /** Sector header gets a colored accent bar (the brand colour for this sector) */
+  accentColor?: string;
+  /** When true, all row accordions render expanded by default. */
+  initiallyExpanded?: boolean;
+  /** Click handler for the sector header — used to navigate / zoom into the sector. */
+  onSectorClick?: () => void;
 }
 
 const categoryColor: Record<PriceCategory, string> = {
@@ -60,8 +70,12 @@ export function TicketList({
   onReserve,
   onBestInSection,
   resaleColor = '#ec4899',
+  flowing = false,
+  accentColor,
+  initiallyExpanded = false,
+  onSectorClick,
 }: TicketListProps) {
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(() => new Set());
 
   const rows = useMemo<RowGroup[]>(() => {
     const map = new Map<string, Seat[]>();
@@ -113,14 +127,29 @@ export function TicketList({
       elevation={0}
       square
       sx={{
-        height: '100%',
+        height: flowing ? 'auto' : '100%',
         display: 'flex',
         flexDirection: 'column',
         bgcolor: '#ffffff',
-        overflow: 'hidden',
+        overflow: flowing ? 'visible' : 'hidden',
       }}
     >
-      <Box sx={{ px: { xs: 1.25, md: 2 }, py: { xs: 1, md: 1.5 }, borderBottom: '1px solid #d4d4d8', bgcolor: '#fafafa', flexShrink: 0 }}>
+      <Box
+        onClick={onSectorClick}
+        sx={{
+          px: { xs: 1.25, md: 2 },
+          py: { xs: 1, md: 1.25 },
+          borderBottom: '1px solid #d4d4d8',
+          bgcolor: '#fafafa',
+          flexShrink: 0,
+          position: flowing ? 'sticky' : 'static',
+          top: flowing ? 0 : 'auto',
+          zIndex: flowing ? 2 : 'auto',
+          cursor: onSectorClick ? 'pointer' : 'default',
+          borderLeft: accentColor ? `3px solid ${accentColor}` : 'none',
+          '&:hover': onSectorClick ? { bgcolor: '#f4f2f5' } : {},
+        }}
+      >
         <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between" sx={{ mb: onBestInSection ? 1 : 0 }}>
           <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0 }}>
             <Icon name="ticket-extra" size={20} color="#06d373" />
@@ -146,7 +175,15 @@ export function TicketList({
         )}
       </Box>
 
-      <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', touchAction: 'pan-y', p: 1 }}>
+      <Box sx={{
+        flex: flowing ? 'none' : 1,
+        minHeight: 0,
+        overflow: flowing ? 'visible' : 'auto',
+        WebkitOverflowScrolling: flowing ? undefined : 'touch',
+        overscrollBehavior: flowing ? undefined : 'contain',
+        touchAction: flowing ? undefined : 'pan-y',
+        p: 1,
+      }}>
         {totalAvailable === 0 && (
           <Box sx={{ p: 3, textAlign: 'center' }}>
             <Typography variant="body2" color="text.secondary">
@@ -156,7 +193,7 @@ export function TicketList({
         )}
 
         {rows.map((group) => {
-          const expanded = expandedRows.has(group.row);
+          const expanded = initiallyExpanded ? !expandedRows.has(group.row) : expandedRows.has(group.row);
           const accent = categoryColor[group.category];
           const selectedInRow = group.seats.filter((s) => selectedIds.has(s.id)).length;
           return (
