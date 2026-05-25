@@ -1666,8 +1666,79 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
         })()}
       </Box>
 
-      {/* Mobile bottom-sheet overlay: peek by default, tap to expand */}
-      {isMobile && (view === 'detail' || (fanLayout && !!selectedSector)) && selectedSector && (
+      {/* Mobile bottom-sheet overlay
+          v4: visible always, contains the same continuous multi-sector list as desktop
+          v3: visible only when a sector is zoomed in, contains the single-sector list */}
+      {isMobile && allSeatsVisible && (() => {
+        const fanSectors = sectorsV3.filter((s) => !s.locked && (s as V3Sector).seatsBBox);
+        const totalAvailable = fanSectors.reduce((sum, s) => sum + (matchingBySector[s.id]?.available ?? 0), 0);
+        return (
+          <Box
+            sx={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: listSheetExpanded ? '70%' : 56,
+              bgcolor: '#ffffff',
+              borderTop: '1px solid #e9e7ed',
+              boxShadow: '0 -8px 24px rgba(17,0,43,0.08)',
+              zIndex: 6,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              transition: 'height 240ms ease',
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+            }}
+          >
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="center"
+              onClick={() => setListSheetExpanded((v) => !v)}
+              sx={{ px: 1.5, py: 1, cursor: 'pointer', flexShrink: 0, position: 'relative' }}
+            >
+              <Box sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: '#c1bacb', position: 'absolute', left: '50%', top: 4, transform: 'translateX(-50%)' }} />
+              <Box sx={{ flex: 1, minWidth: 0, pt: 0.75 }}>
+                <Typography sx={{ fontWeight: 800, fontSize: 13, lineHeight: 1.15 }} noWrap>
+                  {selectedSector ? selectedSector.name : 'All tickets'}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {totalAvailable} tickets · {fanSectors.length} sections
+                </Typography>
+              </Box>
+              <IconButton size="small" sx={{ flexShrink: 0 }} aria-label={listSheetExpanded ? 'Collapse list' : 'Expand list'}>
+                <Icon name={listSheetExpanded ? 'tailless-line-arrow-down-5' : 'tailless-line-arrow-up-5'} size={16} color="#11002b" />
+              </IconButton>
+            </Stack>
+            <Box sx={{ flex: 1, minHeight: 0, display: listSheetExpanded ? 'block' : 'none', overflow: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
+              {fanSectors.map((s) => {
+                const accent = s.id === 'mezzanine' ? '#7b5aa8' : '#9d85d0';
+                const sectorSeats = (selectedSector?.id === s.id ? seats : generateSeats(s)).filter((seat) => !seatFiltered(seat));
+                return (
+                  <TicketList
+                    key={s.id}
+                    flowing
+                    initiallyExpanded
+                    accentColor={accent}
+                    sector={s}
+                    seats={sectorSeats}
+                    selectedIds={selectedIds}
+                    onReserve={reserveSeat}
+                    onBestInSection={selectedSector?.id === s.id ? selectBestAvailable : undefined}
+                    onSectorClick={() => { openSector(s); setListSheetExpanded(false); }}
+                    resaleColor={RESALE_COLOR}
+                  />
+                );
+              })}
+            </Box>
+          </Box>
+        );
+      })()}
+
+      {/* v3 mobile bottom sheet — single sector when zoomed in */}
+      {isMobile && !allSeatsVisible && (view === 'detail' || (fanLayout && !!selectedSector)) && selectedSector && (
         <Box
           sx={{
             position: 'absolute',
