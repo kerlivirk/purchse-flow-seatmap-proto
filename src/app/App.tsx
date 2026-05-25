@@ -438,10 +438,32 @@ function MapLab({ variant }: { variant: 'v1' | 'v2' | 'v3' | 'v4' }) {
           {secondsLeft !== null && <LinearProgress variant="determinate" value={progress} sx={{ height: 3, bgcolor: '#d4d4d8', '& .MuiLinearProgress-bar': { bgcolor: '#a855f7' } }} />}
         </AppBar>
 
-        <Box component="main" sx={{ flex: 1, p: { xs: 1, md: 2 }, pb: { xs: 10, md: 9 } }}>
-          <Container maxWidth="xl" disableGutters={isMobile} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {(variant === 'v3' || variant === 'v4') ? (
-              <Paper elevation={0} sx={{ height: { xs: 'calc(100vh - 130px)', md: 'calc(100vh - 145px)' }, minHeight: 480, border: '1px solid #e9e7ed', borderRadius: 2, overflow: 'hidden', bgcolor: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+        <Box
+          component="main"
+          sx={{
+            flex: 1,
+            p: (variant === 'v3' || variant === 'v4') ? 0 : { xs: 1, md: 2 },
+            pb: { xs: 10, md: 9 },
+          }}
+        >
+          {(variant === 'v3' || variant === 'v4') ? (
+            <Box sx={{ height: { xs: 'calc(100vh - 113px)', md: 'calc(100vh - 121px)' }, minHeight: 480, bgcolor: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+              <VenueMap
+                ref={mapRef}
+                selectedSeats={selectedSeats}
+                onSelectionChange={setSelectedSeats}
+                filters={filters}
+                onFiltersChange={setFilters}
+                variant={variant}
+                hideActionBar
+                hideToolbarFilters
+                onMapStateChange={setMapState}
+              />
+            </Box>
+          ) : (
+            <Container maxWidth="xl" disableGutters={isMobile} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <EventHeader variant={variant} />
+              <Paper elevation={0} sx={{ height: { xs: 'calc(100vh - 240px)', md: 'calc(100vh - 220px)' }, minHeight: 540, border: '1px solid #e9e7ed', borderRadius: 2, overflow: 'hidden', bgcolor: '#ffffff', display: 'flex', flexDirection: 'column' }}>
                 <VenueMap
                   ref={mapRef}
                   selectedSeats={selectedSeats}
@@ -450,28 +472,11 @@ function MapLab({ variant }: { variant: 'v1' | 'v2' | 'v3' | 'v4' }) {
                   onFiltersChange={setFilters}
                   variant={variant}
                   hideActionBar
-                  hideToolbarFilters
                   onMapStateChange={setMapState}
                 />
               </Paper>
-            ) : (
-              <>
-                <EventHeader variant={variant} />
-                <Paper elevation={0} sx={{ height: { xs: 'calc(100vh - 240px)', md: 'calc(100vh - 220px)' }, minHeight: 540, border: '1px solid #e9e7ed', borderRadius: 2, overflow: 'hidden', bgcolor: '#ffffff', display: 'flex', flexDirection: 'column' }}>
-                  <VenueMap
-                    ref={mapRef}
-                    selectedSeats={selectedSeats}
-                    onSelectionChange={setSelectedSeats}
-                    filters={filters}
-                    onFiltersChange={setFilters}
-                    variant={variant}
-                    hideActionBar
-                    onMapStateChange={setMapState}
-                  />
-                </Paper>
-              </>
-            )}
-          </Container>
+            </Container>
+          )}
         </Box>
 
         <Paper
