@@ -309,7 +309,7 @@ function MapLab({ variant }: { variant: 'v1' | 'v2' | 'v3' | 'v4' }) {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Box sx={{ minHeight: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
+      <Box sx={{ height: '100dvh', width: '100vw', display: 'flex', flexDirection: 'column', bgcolor: 'background.default', overflow: 'hidden' }}>
         <AppBar position="sticky" elevation={0} sx={{ bgcolor: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(16px)', borderBottom: '1px solid #e9e7ed', color: '#11002b' }}>
           <Toolbar sx={{ minHeight: { xs: 56, md: 64 }, px: { xs: 1.5, md: 3 }, gap: 1.5 }}>
             {(variant === 'v3' || variant === 'v4') ? (

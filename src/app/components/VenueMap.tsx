@@ -988,11 +988,13 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
             )}
             {fanLayout ? (
               isSelectedInFan ? null : allSeatsVisible ? (
-                // v4: small dark-grey sector label tucked above the seats so it stays readable
+                // v4: dark-grey sector label tucked above the seats. Font sizes are larger than
+                // they look on desktop because the SVG (1280×900) scales down hard on mobile —
+                // these end up readable on a 360px viewport.
                 !hiddenSectorIds.has(sector.id) && (
                   <g style={{ pointerEvents: 'none' }}>
-                    <text x={labelCx} y={178} textAnchor="middle" fill="#3f3146" fontSize="18" fontWeight="900" letterSpacing="1.5">{sector.name.toUpperCase()}</text>
-                    <text x={labelCx} y={196} textAnchor="middle" fill="#7a6e88" fontSize="11" fontWeight="700">
+                    <text x={labelCx} y={176} textAnchor="middle" fill="#3f3146" fontSize="28" fontWeight="900" letterSpacing="2">{sector.name.toUpperCase()}</text>
+                    <text x={labelCx} y={198} textAnchor="middle" fill="#7a6e88" fontSize="16" fontWeight="700">
                       {`${match.available} tickets · from ${sector.startingPrice} PLN`}
                     </text>
                   </g>
@@ -1493,6 +1495,11 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
 
           {(zoom > 1.0 || (fanLayout && !!selectedSector)) && (
             <Box
+              role="button"
+              tabIndex={0}
+              aria-label="Back to full venue"
+              onClick={() => { setView('overview'); setSelectedSector(null); resetMap(); }}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setView('overview'); setSelectedSector(null); resetMap(); } }}
               sx={{
                 position: 'absolute',
                 right: 12,
@@ -1506,6 +1513,24 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
                 boxShadow: '0 4px 16px rgba(17,0,43,0.08), 0 1px 3px rgba(17,0,43,0.06)',
                 overflow: 'hidden',
                 zIndex: 5,
+                cursor: 'pointer',
+                transition: 'box-shadow 150ms, transform 150ms',
+                '&:hover': { boxShadow: '0 6px 20px rgba(17,0,43,0.14), 0 1px 3px rgba(17,0,43,0.08)', transform: 'translateY(-1px)' },
+                '&::after': {
+                  content: '"Back to venue"',
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  fontSize: 9,
+                  fontWeight: 800,
+                  letterSpacing: 0.5,
+                  textAlign: 'center',
+                  color: '#11002b',
+                  bgcolor: 'rgba(255,255,255,0.92)',
+                  py: 0.25,
+                  borderTop: '1px solid #e9e7ed',
+                },
               }}
             >
               <svg width="100%" height="100%" viewBox={fanLayout ? '0 0 1280 900' : '0 0 900 720'} preserveAspectRatio="xMidYMid meet">

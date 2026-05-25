@@ -117,7 +117,6 @@ export function TicketList({
         display: 'flex',
         flexDirection: 'column',
         bgcolor: '#ffffff',
-        borderLeft: '1px solid #e9e7ed',
         overflow: 'hidden',
       }}
     >
