@@ -442,12 +442,17 @@ function MapLab({ variant }: { variant: 'v1' | 'v2' | 'v3' | 'v4' }) {
           component="main"
           sx={{
             flex: 1,
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
             p: (variant === 'v3' || variant === 'v4') ? 0 : { xs: 1, md: 2 },
-            pb: { xs: 10, md: 9 },
+            pb: (variant === 'v3' || variant === 'v4')
+              ? `calc(56px + env(safe-area-inset-bottom))`
+              : { xs: 10, md: 9 },
           }}
         >
           {(variant === 'v3' || variant === 'v4') ? (
-            <Box sx={{ height: { xs: 'calc(100vh - 113px)', md: 'calc(100vh - 121px)' }, minHeight: 480, bgcolor: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+            <Box sx={{ flex: 1, minHeight: 0, bgcolor: '#ffffff', display: 'flex', flexDirection: 'column' }}>
               <VenueMap
                 ref={mapRef}
                 selectedSeats={selectedSeats}
