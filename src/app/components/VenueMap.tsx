@@ -1174,7 +1174,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
         </Box>
       )}
 
-      <Box sx={{ flex: 1, display: 'grid', gridTemplateColumns: { xs: '1fr', md: `${filtersOpen && !isMobile ? '300px ' : ''}1fr${((view === 'detail' || (fanLayout && !!selectedSector))) && selectedSector ? ' 340px' : ''}` }, gridTemplateRows: { xs: ((view === 'detail' || (fanLayout && !!selectedSector))) && selectedSector ? '60vh minmax(160px, 1fr)' : '1fr', md: '1fr' }, minHeight: 0, overflow: 'hidden' }}>
+      <Box sx={{ flex: 1, display: 'grid', gridTemplateColumns: { xs: '1fr', md: `${filtersOpen && !isMobile ? '300px ' : ''}1fr${((view === 'detail' || (fanLayout && !!selectedSector))) && selectedSector ? ' 340px' : ''}` }, gridTemplateRows: { xs: ((view === 'detail' || (fanLayout && !!selectedSector))) && selectedSector ? '55vh minmax(0, 1fr)' : '1fr', md: '1fr' }, minHeight: 0, overflow: 'hidden' }}>
         {filtersOpen && !isMobile && (
           <Box sx={{ p: 2, bgcolor: '#ffffff', color: '#11002b', borderRight: '1px solid #e9e7ed', overflow: 'auto' }}>
             {renderFilterPanel()}
