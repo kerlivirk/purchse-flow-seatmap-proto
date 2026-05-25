@@ -242,7 +242,7 @@ const sectorsV3: V3Sector[] = [
     accessible: true,
     path: 'M60 267 L240 151 L599 151 C640 284 641 501 599 730 L240 730 L60 614 C88 498 87 383 60 267 Z',
     seatsBBox: { x: 90, y: 200, w: 500, h: 480 },
-    focusBBox: { x: 0, y: 100, w: 700, h: 700 },
+    focusBBox: { x: 30, y: 130, w: 600, h: 620 },
   },
   {
     id: 'mezzanine',
@@ -256,7 +256,7 @@ const sectorsV3: V3Sector[] = [
     accessible: true,
     path: 'M625 151 L946 151 C998 279 1002 528 946 730 L624 730 C686 574 698 311 625 151 Z',
     seatsBBox: { x: 650, y: 200, w: 320, h: 480 },
-    focusBBox: { x: 540, y: 100, w: 540, h: 700 },
+    focusBBox: { x: 600, y: 130, w: 410, h: 620 },
   },
   {
     id: 'balcony',
@@ -269,7 +269,7 @@ const sectorsV3: V3Sector[] = [
     availableSeats: 96,
     path: 'M967 151 L1148 151 C1218 300 1220 575 1148 730 L967 730 C1049 574 1057 312 967 151 Z',
     seatsBBox: { x: 985, y: 200, w: 200, h: 480 },
-    focusBBox: { x: 880, y: 100, w: 380, h: 700 },
+    focusBBox: { x: 940, y: 130, w: 290, h: 620 },
   },
   // Hidden press / crew sector — small wedge tucked at the back
   {
@@ -372,6 +372,8 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
   const [hoveredSectorId, setHoveredSectorId] = useState<string | null>(null);
   const [dynamicReservedByOthers, setDynamicReservedByOthers] = useState<Set<string>>(new Set());
   const [flashSeats, setFlashSeats] = useState<Set<string>>(new Set());
+  // Smoothly animated SVG viewBox for v3 zoom-to-sector
+  const [animVB, setAnimVB] = useState<[number, number, number, number]>([0, 0, 1280, 900]);
   const selectedIds = new Set(selectedSeats.map((seat) => seat.id));
   const selectedTotal = selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
 
@@ -650,16 +652,9 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
   );
 
   const renderOverview = () => {
-    const focusedVB = (() => {
-      if (!fanLayout) return null;
-      const sv3 = selectedSector as V3Sector | null;
-      if (!sv3?.focusBBox) return null;
-      const { x, y, w, h } = sv3.focusBBox;
-      return `${x} ${y} ${w} ${h}`;
-    })();
-    const overviewVB = fanLayout ? (focusedVB ?? '0 0 1280 900') : '0 0 900 720';
+    const overviewVB = fanLayout ? `${animVB[0]} ${animVB[1]} ${animVB[2]} ${animVB[3]}` : '0 0 900 720';
     return (
-    <svg width="100%" height="100%" viewBox={overviewVB} preserveAspectRatio="xMidYMid meet" style={{ transition: 'all 250ms ease' }}>
+    <svg width="100%" height="100%" viewBox={overviewVB} preserveAspectRatio="xMidYMid meet">
       <defs>
         <linearGradient id="stageGradient" x1="0" x2="1">
           <stop offset="0%" stopColor="#e4e4e7" />
@@ -1006,6 +1001,35 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
     });
   }, [selectedSector, view, onMapStateChange]);
 
+  // Animate the v3 SVG viewBox between full venue and the selected sector's focus rectangle.
+  useEffect(() => {
+    if (!fanLayout) return;
+    const target: [number, number, number, number] = (() => {
+      const sv3 = selectedSector as V3Sector | null;
+      if (sv3?.focusBBox) return [sv3.focusBBox.x, sv3.focusBBox.y, sv3.focusBBox.w, sv3.focusBBox.h];
+      return [0, 0, 1280, 900];
+    })();
+    const start: [number, number, number, number] = [...animVB] as [number, number, number, number];
+    if (start.every((v, i) => Math.abs(v - target[i]) < 0.5)) return;
+    const duration = 280;
+    const t0 = performance.now();
+    let raf = 0;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - t0) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setAnimVB([
+        start[0] + (target[0] - start[0]) * eased,
+        start[1] + (target[1] - start[1]) * eased,
+        start[2] + (target[2] - start[2]) * eased,
+        start[3] + (target[3] - start[3]) * eased,
+      ]);
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fanLayout, selectedSector?.id]);
+
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#ffffff', color: '#11002b' }}>
       <Box sx={{ px: { xs: 1.25, md: 1.5 }, py: { xs: 0.5, md: 0.75 }, borderBottom: '1px solid #e9e7ed', bgcolor: '#ffffff' }}>
@@ -1150,7 +1174,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
         </Box>
       )}
 
-      <Box sx={{ flex: 1, display: 'grid', gridTemplateColumns: { xs: '1fr', md: `${filtersOpen && !isMobile ? '300px ' : ''}1fr${((view === 'detail' || (fanLayout && !!selectedSector))) && selectedSector ? ' 340px' : ''}` }, gridTemplateRows: { xs: ((view === 'detail' || (fanLayout && !!selectedSector))) && selectedSector ? '240px minmax(0, 1fr)' : '1fr', md: '1fr' }, minHeight: 0, overflow: 'hidden' }}>
+      <Box sx={{ flex: 1, display: 'grid', gridTemplateColumns: { xs: '1fr', md: `${filtersOpen && !isMobile ? '300px ' : ''}1fr${((view === 'detail' || (fanLayout && !!selectedSector))) && selectedSector ? ' 340px' : ''}` }, gridTemplateRows: { xs: ((view === 'detail' || (fanLayout && !!selectedSector))) && selectedSector ? '60vh minmax(160px, 1fr)' : '1fr', md: '1fr' }, minHeight: 0, overflow: 'hidden' }}>
         {filtersOpen && !isMobile && (
           <Box sx={{ p: 2, bgcolor: '#ffffff', color: '#11002b', borderRight: '1px solid #e9e7ed', overflow: 'auto' }}>
             {renderFilterPanel()}
@@ -1162,14 +1186,15 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
             {view === 'pure' ? renderPureMap() : view === 'detail' ? renderSeats() : renderOverview()}
           </Box>
 
-          {zoom > 1.0 && (
+          {(zoom > 1.0 || (fanLayout && !!selectedSector)) && (
             <Box
               sx={{
                 position: 'absolute',
-                right: 16,
-                bottom: 16,
-                width: 120,
-                height: 80,
+                right: 12,
+                bottom: { xs: 'auto', md: 16 },
+                top: { xs: 12, md: 'auto' },
+                width: { xs: 96, md: 120 },
+                height: { xs: 64, md: 80 },
                 bgcolor: '#ffffff',
                 border: '1px solid #e9e7ed',
                 borderRadius: '8px',
@@ -1240,8 +1265,8 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
             spacing={0.75}
             sx={{
               position: 'absolute',
-              right: zoom > 1.0 ? 148 : 16,
-              bottom: 16,
+              right: { xs: 12, md: zoom > 1.0 || (fanLayout && !!selectedSector) ? 148 : 16 },
+              bottom: { xs: 12, md: 16 },
               zIndex: 5,
               transition: 'right 200ms',
             }}
