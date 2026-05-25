@@ -127,6 +127,9 @@ export interface MapHandle {
   selectBestAvailable: (count: number) => void;
   buyFullTable: () => void;
   clearBasket: () => void;
+  /** Simulate another user claiming a random available seat in the currently open sector.
+   *  Returns the seat description if one was taken, or null if no sector is open / nothing available. */
+  claimRandomSeat: () => { seatId: string; label: string } | null;
 }
 
 interface VenueMapProps {
@@ -220,9 +223,11 @@ function wedgeCentroid(cx: number, cy: number, innerR: number, outerR: number, s
   return polarPoint(cx, cy, midR, midDeg);
 }
 // v3 sectors derived from section_map.svg — 3 main sections in a fan layout.
-// `seatsBBox` defines the area where seat dots get rendered when the sector is selected.
+// `seatsBBox` defines where seat dots land inside the sector. `focusBBox` is the
+// viewBox rectangle used to "zoom into" the sector — independent of screen size.
 interface V3Sector extends Sector {
   seatsBBox?: { x: number; y: number; w: number; h: number };
+  focusBBox?: { x: number; y: number; w: number; h: number };
 }
 const sectorsV3: V3Sector[] = [
   {
@@ -237,6 +242,7 @@ const sectorsV3: V3Sector[] = [
     accessible: true,
     path: 'M60 267 L240 151 L599 151 C640 284 641 501 599 730 L240 730 L60 614 C88 498 87 383 60 267 Z',
     seatsBBox: { x: 90, y: 200, w: 500, h: 480 },
+    focusBBox: { x: 0, y: 100, w: 700, h: 700 },
   },
   {
     id: 'mezzanine',
@@ -250,6 +256,7 @@ const sectorsV3: V3Sector[] = [
     accessible: true,
     path: 'M625 151 L946 151 C998 279 1002 528 946 730 L624 730 C686 574 698 311 625 151 Z',
     seatsBBox: { x: 650, y: 200, w: 320, h: 480 },
+    focusBBox: { x: 540, y: 100, w: 540, h: 700 },
   },
   {
     id: 'balcony',
@@ -262,6 +269,7 @@ const sectorsV3: V3Sector[] = [
     availableSeats: 96,
     path: 'M967 151 L1148 151 C1218 300 1220 575 1148 730 L967 730 C1049 574 1057 312 967 151 Z',
     seatsBBox: { x: 985, y: 200, w: 200, h: 480 },
+    focusBBox: { x: 880, y: 100, w: 380, h: 700 },
   },
   // Hidden press / crew sector — small wedge tucked at the back
   {
@@ -362,6 +370,8 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
   const seats = useMemo(() => (selectedSector ? generateSeats(selectedSector) : []), [selectedSector]);
   const [focusedSeatId, setFocusedSeatId] = useState<string | null>(null);
   const [hoveredSectorId, setHoveredSectorId] = useState<string | null>(null);
+  const [dynamicReservedByOthers, setDynamicReservedByOthers] = useState<Set<string>>(new Set());
+  const [flashSeats, setFlashSeats] = useState<Set<string>>(new Set());
   const selectedIds = new Set(selectedSeats.map((seat) => seat.id));
   const selectedTotal = selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
 
@@ -452,16 +462,10 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
 
     setSelectedSector(sector);
     if (fanLayout) {
-      // v3: stay on the overview map but zoom in to the chosen sector.
-      // Seat dots appear inside the same SVG (rendered below).
-      const FOCUS: Record<string, { zoom: number; pan: { x: number; y: number } }> = {
-        orchestra: { zoom: 1.9, pan: { x: 180, y: 0 } },
-        mezzanine: { zoom: 1.9, pan: { x: -240, y: 0 } },
-        balcony: { zoom: 1.9, pan: { x: -460, y: 0 } },
-      };
-      const f = FOCUS[sector.id] ?? { zoom: 1.6, pan: { x: 0, y: 0 } };
-      setZoom(f.zoom);
-      setPan(f.pan);
+      // v3: stay on the overview map; zoom is handled by switching the SVG viewBox
+      // (in renderOverview below). Reset CSS pan/zoom so the focus is purely viewBox-driven.
+      setZoom(1);
+      setPan({ x: 0, y: 0 });
     } else {
       setView('detail');
       setZoom(1);
@@ -645,14 +649,27 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
     </>
   );
 
-  const renderOverview = () => (
-    <svg width="100%" height="100%" viewBox={fanLayout ? '0 0 1280 900' : '0 0 900 720'} preserveAspectRatio="xMidYMid meet">
+  const renderOverview = () => {
+    const focusedVB = (() => {
+      if (!fanLayout) return null;
+      const sv3 = selectedSector as V3Sector | null;
+      if (!sv3?.focusBBox) return null;
+      const { x, y, w, h } = sv3.focusBBox;
+      return `${x} ${y} ${w} ${h}`;
+    })();
+    const overviewVB = fanLayout ? (focusedVB ?? '0 0 1280 900') : '0 0 900 720';
+    return (
+    <svg width="100%" height="100%" viewBox={overviewVB} preserveAspectRatio="xMidYMid meet" style={{ transition: 'all 250ms ease' }}>
       <defs>
         <linearGradient id="stageGradient" x1="0" x2="1">
           <stop offset="0%" stopColor="#e4e4e7" />
           <stop offset="100%" stopColor="#06d373" />
         </linearGradient>
         <filter id="softShadow"><feDropShadow dx="0" dy="3" stdDeviation="4" floodOpacity="0.10" /></filter>
+        {/* Per-v3-sector clip paths so seat dots stay inside the sector outline */}
+        {fanLayout && sectorsV3.filter((s) => s.path).map((s) => (
+          <clipPath id={`sectorClip-${s.id}`} key={s.id}><path d={s.path!} /></clipPath>
+        ))}
       </defs>
 
       {fanLayout ? (
@@ -731,12 +748,15 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
         const v3BaseColor = sector.id === 'mezzanine' ? '#7b5aa8' : sector.id === 'orchestra' || sector.id === 'balcony' ? '#9d85d0' : '#5a5062';
         const v3HoverColor = sector.id === 'mezzanine' ? '#54426e' : sector.id === 'orchestra' || sector.id === 'balcony' ? '#7b5aa8' : '#5a5062';
         const v3Color = isHovered ? v3HoverColor : v3BaseColor;
-        const fill = disabled || noMatches ? '#d4d4d8' : fanLayout ? v3Color : colors[sector.priceCategory];
+        const isSelectedInFan = fanLayout && selectedSector?.id === sector.id;
+        // For the selected sector in v3, render a very light tint so seats stand out.
+        const baseFill = disabled || noMatches ? '#d4d4d8' : fanLayout ? v3Color : colors[sector.priceCategory];
+        const fill = isSelectedInFan ? '#f3f2fc' : baseFill;
         const matchRatio = Math.min(1, match.available / maxMatching);
         let tileOpacity = disabled ? 0.18 : noMatches ? 0.22 : 0.55 + matchRatio * 0.45;
         // v3: when a sector is selected, fade out the others so seats can read over them
-        if (fanLayout && selectedSector && selectedSector.id !== sector.id) tileOpacity = 0.18;
-        if (fanLayout && selectedSector && selectedSector.id === sector.id) tileOpacity = 0.35;
+        if (fanLayout && selectedSector && selectedSector.id !== sector.id) tileOpacity = 0.15;
+        if (isSelectedInFan) tileOpacity = 1; // very light fill, fully opaque — acts as a clean background
         const labelCx = sector.path ? sector.x + sector.width / 2 : sector.width / 2;
         const labelCy = sector.path ? sector.y + sector.height / 2 : sector.height / 2;
         return (
@@ -752,17 +772,25 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
             style={{ cursor: disabled || noMatches ? 'not-allowed' : 'pointer', transition: 'opacity 150ms' }}
           >
             {sector.path ? (
-              <path d={sector.path} fill={fill} opacity={tileOpacity} stroke={sector.accessible ? '#06d373' : 'transparent'} strokeWidth={fanLayout ? 2 : 1} />
+              <path
+                d={sector.path}
+                fill={fill}
+                opacity={tileOpacity}
+                stroke={isSelectedInFan ? '#7b5aa8' : sector.accessible ? '#06d373' : 'transparent'}
+                strokeWidth={isSelectedInFan ? 2.5 : fanLayout ? 2 : 1}
+              />
             ) : (
               <rect width={sector.width} height={sector.height} rx={gridLayout ? 14 : 12} fill={fill} opacity={tileOpacity} stroke={sector.accessible ? '#06d373' : 'transparent'} strokeWidth={gridLayout ? 1 : 1.5} filter={gridLayout ? undefined : 'url(#softShadow)'} />
             )}
             {fanLayout ? (
-              <>
-                <text x={labelCx} y={labelCy - 6} textAnchor="middle" fill="white" fontSize="30" fontWeight="700" letterSpacing="1">{sector.name.toUpperCase()}</text>
-                <text x={labelCx} y={labelCy + 22} textAnchor="middle" fill="rgba(255,255,255,0.85)" fontSize="16" fontWeight="600">
-                  {sector.locked && !unlockedCrew ? 'Code required' : `${match.available}+ tickets · from ${sector.startingPrice} PLN`}
-                </text>
-              </>
+              !isSelectedInFan && (
+                <>
+                  <text x={labelCx} y={labelCy - 6} textAnchor="middle" fill="white" fontSize="30" fontWeight="700" letterSpacing="1">{sector.name.toUpperCase()}</text>
+                  <text x={labelCx} y={labelCy + 22} textAnchor="middle" fill="rgba(255,255,255,0.85)" fontSize="16" fontWeight="600">
+                    {sector.locked && !unlockedCrew ? 'Code required' : `${match.available}+ tickets · from ${sector.startingPrice} PLN`}
+                  </text>
+                </>
+              )
             ) : gridLayout ? (
               <>
                 <text x={labelCx} y={labelCy - 2} textAnchor="middle" fill="white" fontSize="13" fontWeight="800" letterSpacing="0.5">{sector.name}</text>
@@ -814,23 +842,27 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
               y: bbox.y + ((sy - SRC.y0) / (SRC.y1 - SRC.y0)) * bbox.h,
             });
             return (
-              <g>
+              <g clipPath={`url(#sectorClip-${selectedSector.id})`}>
                 {seats.filter((s) => !seatFiltered(s)).map((seat) => {
                   const p = project(seat.x, seat.y);
                   const selected = selectedIds.has(seat.id);
                   const loading = preReserving.includes(seat.id);
                   const failed = failedSeats.includes(seat.id);
-                  const isResale = seat.resale && seat.status === 'available';
-                  const seatFill = failed ? '#ef4444' : loading ? '#c084fc' : selected ? '#06d373' : seat.status === 'unavailable' ? '#a99db6' : seat.status === 'reserved-by-other' ? '#84738f' : '#11002b';
+                  const claimedByOther = dynamicReservedByOthers.has(seat.id) || seat.status === 'reserved-by-other';
+                  const flashing = flashSeats.has(seat.id);
+                  const isResale = seat.resale && seat.status === 'available' && !claimedByOther;
+                  const effectivelyAvailable = seat.status === 'available' && !claimedByOther;
+                  const seatFill = flashing ? '#ff0032' : failed ? '#ef4444' : loading ? '#c084fc' : selected ? '#06d373' : seat.status === 'unavailable' ? '#a99db6' : claimedByOther ? '#84738f' : '#11002b';
                   const seatStroke = selected ? '#11002b' : isResale ? RESALE_COLOR : 'transparent';
                   return (
                     <g
                       key={seat.id}
-                      onClick={() => seat.status === 'available' && reserveSeat(seat)}
-                      style={{ cursor: seat.status === 'available' ? 'pointer' : 'not-allowed' }}
+                      onClick={() => effectivelyAvailable && reserveSeat(seat)}
+                      style={{ cursor: effectivelyAvailable ? 'pointer' : 'not-allowed', transition: 'fill 200ms' }}
                     >
                       <circle cx={p.x} cy={p.y} r={selected ? 7 : 6} fill={seatFill} stroke={seatStroke} strokeWidth={isResale && !selected ? 2 : 1.5} />
                       {loading && <circle cx={p.x} cy={p.y} r="10" fill="none" stroke="#c084fc" strokeWidth="2" strokeDasharray="3 3"><animateTransform attributeName="transform" type="rotate" from={`0 ${p.x} ${p.y}`} to={`360 ${p.x} ${p.y}`} dur="1s" repeatCount="indefinite" /></circle>}
+                      {flashing && <circle cx={p.x} cy={p.y} r="12" fill="none" stroke="#ff0032" strokeWidth="2" opacity="0.6" />}
                     </g>
                   );
                 })}
@@ -859,7 +891,8 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
         </>
       )}
     </svg>
-  );
+    );
+  };
 
   const renderPureMap = () => (
     <svg width="100%" height="100%" viewBox="0 0 900 720">
@@ -895,24 +928,28 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
         const loading = preReserving.includes(seat.id);
         const failed = failedSeats.includes(seat.id);
         const filtered = seatFiltered(seat);
-        const fill = failed ? '#ef4444' : loading ? '#c084fc' : selected ? '#f5f3ff' : seat.status === 'unavailable' ? '#3f3f46' : seat.status === 'reserved-by-other' ? '#52525b' : filtered ? '#d4d4d8' : colors[seat.priceCategory];
-        const isResale = seat.resale && !filtered && seat.status === 'available';
+        const claimedByOther = dynamicReservedByOthers.has(seat.id) || seat.status === 'reserved-by-other';
+        const flashing = flashSeats.has(seat.id);
+        const fill = flashing ? '#ff0032' : failed ? '#ef4444' : loading ? '#c084fc' : selected ? '#f5f3ff' : seat.status === 'unavailable' ? '#3f3f46' : claimedByOther ? '#52525b' : filtered ? '#d4d4d8' : colors[seat.priceCategory];
+        const isResale = seat.resale && !filtered && seat.status === 'available' && !claimedByOther;
         const isFocused = keyboardNav && focusedSeatId === seat.id;
+        const effectivelyAvailable = !filtered && !claimedByOther && seat.status === 'available';
         const stroke = isFocused ? '#11002b' : selected ? '#06d373' : failed ? '#fecaca' : isResale ? RESALE_COLOR : '#3f3f46';
         const strokeWidth = isFocused ? 3 : isResale && !selected ? 2.5 : 2;
         return (
           <Tooltip
             key={seat.id}
-            title={`${seat.sectorName} · Row ${seat.row}, Seat ${seat.number} · ${seat.price} PLN${seat.resale ? ' · Resale' : ''}${seat.note ? ` · ${seat.note}` : ''}${seat.categories ? ' · multiple prices' : ''}`}
+            title={`${seat.sectorName} · Row ${seat.row}, Seat ${seat.number} · ${seat.price} PLN${claimedByOther ? ' · Held by another user' : ''}${seat.resale && !claimedByOther ? ' · Resale' : ''}${seat.note ? ` · ${seat.note}` : ''}${seat.categories ? ' · multiple prices' : ''}`}
             arrow
           >
             <g
-              onClick={() => !filtered && reserveSeat(seat)}
-              aria-label={`${seat.sectorName} Row ${seat.row} Seat ${seat.number}, ${seat.status}, ${seat.price} PLN`}
-              style={{ cursor: filtered || seat.status !== 'available' ? 'not-allowed' : 'pointer', opacity: filtered ? 0.35 : 1 }}
+              onClick={() => effectivelyAvailable && reserveSeat(seat)}
+              aria-label={`${seat.sectorName} Row ${seat.row} Seat ${seat.number}, ${claimedByOther ? 'held by another user' : seat.status}, ${seat.price} PLN`}
+              style={{ cursor: effectivelyAvailable ? 'pointer' : 'not-allowed', opacity: filtered ? 0.35 : 1, transition: 'fill 200ms' }}
             >
               {isFocused && <circle cx={seat.x} cy={seat.y} r={14} fill="none" stroke="#11002b" strokeWidth="1.5" strokeDasharray="3 2" />}
               <circle cx={seat.x} cy={seat.y} r={selected ? 11 : 9} fill={fill} stroke={stroke} strokeWidth={strokeWidth} />
+              {flashing && <circle cx={seat.x} cy={seat.y} r={14} fill="none" stroke="#ff0032" strokeWidth="2" opacity="0.6" />}
               {isResale && <circle cx={seat.x + 7} cy={seat.y - 7} r="3" fill={RESALE_COLOR} stroke="white" strokeWidth="1" />}
               {loading && <circle cx={seat.x} cy={seat.y} r="15" fill="none" stroke="#c084fc" strokeWidth="2" strokeDasharray="5 5"><animateTransform attributeName="transform" type="rotate" from={`0 ${seat.x} ${seat.y}`} to={`360 ${seat.x} ${seat.y}`} dur="1s" repeatCount="indefinite" /></circle>}
               {seat.accessible && <text x={seat.x + 8} y={seat.y - 8} fill="#ddd6fe" fontSize="9">♿</text>}
@@ -928,7 +965,38 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
     selectBestAvailable,
     buyFullTable,
     clearBasket: () => updateSelection([]),
-  }), [selectBestAvailable, buyFullTable, updateSelection]);
+    claimRandomSeat: () => {
+      if (!selectedSector) return null;
+      // Pick a random available seat in the open sector that isn't already in someone else's set,
+      // isn't pre-reserving, and isn't already in the user's cart.
+      const pool = seats.filter((s) =>
+        s.status === 'available' &&
+        !dynamicReservedByOthers.has(s.id) &&
+        !preReserving.includes(s.id) &&
+        !selectedIds.has(s.id)
+      );
+      if (!pool.length) return null;
+      const seat = pool[Math.floor(Math.random() * pool.length)];
+      setDynamicReservedByOthers((prev) => {
+        const next = new Set(prev);
+        next.add(seat.id);
+        return next;
+      });
+      setFlashSeats((prev) => {
+        const next = new Set(prev);
+        next.add(seat.id);
+        return next;
+      });
+      window.setTimeout(() => {
+        setFlashSeats((prev) => {
+          const next = new Set(prev);
+          next.delete(seat.id);
+          return next;
+        });
+      }, 700);
+      return { seatId: seat.id, label: `${seat.sectorName} · Row ${seat.row}, Seat ${seat.number}` };
+    },
+  }), [selectBestAvailable, buyFullTable, updateSelection, seats, dynamicReservedByOthers, preReserving, selectedIds, selectedSector]);
 
   useEffect(() => {
     onMapStateChange?.({

@@ -23,6 +23,7 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import { Close, TimerOutlined } from '@mui/icons-material';
+import { Tooltip, Snackbar, Alert } from '@mui/material';
 import { Routes, Route, Link, useLocation } from 'react-router';
 
 import { EventHeader } from './components/EventHeader';
@@ -95,13 +96,35 @@ function CartDrawer({
   onClose,
   selectedSeats,
   secondsLeft,
+  onRemoveSeat,
 }: {
   open: boolean;
   onClose: () => void;
   selectedSeats: SelectedSeat[];
   secondsLeft: number | null;
+  onRemoveSeat: (seatId: string) => void;
 }) {
+  const [verifying, setVerifying] = useState(false);
+  const [lostSeat, setLostSeat] = useState<SelectedSeat | null>(null);
   const total = selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
+
+  const handleCheckout = () => {
+    if (!selectedSeats.length || verifying) return;
+    setLostSeat(null);
+    setVerifying(true);
+    // Simulate "verify availability with server before payment"
+    window.setTimeout(() => {
+      // 35% chance one of the held seats has been lost in the meantime
+      if (Math.random() < 0.35) {
+        const victim = selectedSeats[Math.floor(Math.random() * selectedSeats.length)];
+        setLostSeat(victim);
+        onRemoveSeat(victim.id);
+      } else {
+        setLostSeat(null);
+      }
+      setVerifying(false);
+    }, 1100);
+  };
 
   return (
     <Drawer anchor="right" open={open} onClose={onClose}>
@@ -121,12 +144,25 @@ function CartDrawer({
           </IconButton>
         </Stack>
 
-        {selectedSeats.length === 0 ? (
+        {selectedSeats.length === 0 && !lostSeat ? (
           <Paper variant="outlined" sx={{ p: 3, textAlign: 'center', bgcolor: '#ffffff', borderColor: '#e9e7ed' }}>
             <Typography color="text.secondary">No seats selected yet. Browse the map freely — the timer starts only after a ticket is reserved.</Typography>
           </Paper>
         ) : (
           <Stack spacing={1.5}>
+            {lostSeat && (
+              <Alert
+                severity="warning"
+                onClose={() => setLostSeat(null)}
+                sx={{ bgcolor: '#fffac1', color: '#A76002', border: '1px solid #efb100', fontWeight: 600 }}
+              >
+                <Typography sx={{ fontWeight: 800, mb: 0.25 }}>One seat is no longer available</Typography>
+                <Typography variant="caption">
+                  {getSeatLabel(lostSeat)} was just taken by another user and removed from your cart.
+                  {selectedSeats.length > 0 ? ' Your remaining seats are still held.' : ' Please select new seats.'}
+                </Typography>
+              </Alert>
+            )}
             {selectedSeats.map((seat) => (
               <Paper key={seat.id} variant="outlined" sx={{ p: 1.5, bgcolor: '#ffffff', borderColor: '#e9e7ed' }}>
                 <Stack direction="row" justifyContent="space-between" spacing={1}>
@@ -143,14 +179,21 @@ function CartDrawer({
               </Paper>
             ))}
 
-            <Divider />
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <Typography fontWeight={900}>Total</Typography>
-              <Typography fontWeight={900} color="primary.main">{total} PLN</Typography>
-            </Stack>
-            <M3Button buttonType="accent" size="md" fullWidth>
-              Continue to checkout
-            </M3Button>
+            {selectedSeats.length > 0 && (
+              <>
+                <Divider />
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Typography fontWeight={900}>Total</Typography>
+                  <Typography fontWeight={900} color="primary.main">{total} PLN</Typography>
+                </Stack>
+                <M3Button buttonType="accent" size="md" fullWidth onClick={handleCheckout} disabled={verifying}>
+                  {verifying ? 'Verifying availability…' : 'Continue to checkout'}
+                </M3Button>
+                <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', mt: 0.5 }}>
+                  We re-check the server before payment so you never pay for an unavailable seat.
+                </Typography>
+              </>
+            )}
           </Stack>
         )}
       </Box>
@@ -195,6 +238,47 @@ function MapLab({ variant }: { variant: 'v1' | 'v2' | 'v3' }) {
   const prevCountRef = useRef(0);
   const mapRef = useRef<MapHandle | null>(null);
   const [mapState, setMapState] = useState<MapState>({ selectedSectorName: null, view: 'overview', tableLayoutAvailable: false });
+  // Demo simulation: another user claims a random available seat every few seconds
+  const [simulateOthers, setSimulateOthers] = useState(false);
+  const [simToast, setSimToast] = useState<string | null>(null);
+  // Demo restore: when the user lands and we have a persisted cart, show a one-shot toast
+  const [restoredCount, setRestoredCount] = useState(0);
+
+  // Load persisted cart from sessionStorage on first mount
+  const didRestoreRef = useRef(false);
+  useEffect(() => {
+    if (didRestoreRef.current) return;
+    didRestoreRef.current = true;
+    try {
+      const raw = sessionStorage.getItem('phantom-cart');
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as SelectedSeat[];
+      if (Array.isArray(parsed) && parsed.length) {
+        setSelectedSeats(parsed);
+        setRestoredCount(parsed.length);
+        window.setTimeout(() => setRestoredCount(0), 5000);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  // Persist selectedSeats to sessionStorage
+  useEffect(() => {
+    try {
+      if (selectedSeats.length) sessionStorage.setItem('phantom-cart', JSON.stringify(selectedSeats));
+      else sessionStorage.removeItem('phantom-cart');
+    } catch { /* ignore */ }
+  }, [selectedSeats]);
+
+  // Simulate-others-clicking-seats interval
+  useEffect(() => {
+    if (!simulateOthers) return;
+    const id = window.setInterval(() => {
+      const claimed = mapRef.current?.claimRandomSeat();
+      if (claimed) setSimToast(`Another user just took ${claimed.label}`);
+      window.setTimeout(() => setSimToast(null), 2500);
+    }, 3000);
+    return () => window.clearInterval(id);
+  }, [simulateOthers]);
 
   useEffect(() => {
     if (selectedSeats.length > prevCountRef.current) {
@@ -258,6 +342,24 @@ function MapLab({ variant }: { variant: 'v1' | 'v2' | 'v3' }) {
                 <VersionSwitch />
                 <Box sx={{ flexGrow: 1 }} />
               </>
+            )}
+            {variant === 'v3' && (
+              <Tooltip title={simulateOthers ? 'Stop simulating other users' : 'Simulate other users claiming seats'}>
+                <IconButton
+                  size="small"
+                  onClick={() => setSimulateOthers((v) => !v)}
+                  aria-label="Toggle simulate other users"
+                  sx={{
+                    width: 32, height: 32,
+                    bgcolor: simulateOthers ? '#ff0032' : '#ffffff',
+                    color: simulateOthers ? '#ffffff' : '#5a5062',
+                    border: '1px solid #e9e7ed',
+                    '&:hover': { bgcolor: simulateOthers ? '#cc0028' : '#f4f2f5' },
+                  }}
+                >
+                  <Icon name="user-multiple-group" size={14} />
+                </IconButton>
+              </Tooltip>
             )}
             {variant === 'v3' && (
               <M3Button
@@ -458,7 +560,13 @@ function MapLab({ variant }: { variant: 'v1' | 'v2' | 'v3' }) {
           </Stack>
         </Paper>
 
-        <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} selectedSeats={selectedSeats} secondsLeft={secondsLeft} />
+        <CartDrawer
+          open={cartOpen}
+          onClose={() => setCartOpen(false)}
+          selectedSeats={selectedSeats}
+          secondsLeft={secondsLeft}
+          onRemoveSeat={(seatId) => setSelectedSeats((seats) => seats.filter((s) => s.id !== seatId))}
+        />
         <Dialog
           open={filterDialogOpen}
           onClose={() => setFilterDialogOpen(false)}
@@ -476,6 +584,30 @@ function MapLab({ variant }: { variant: 'v1' | 'v2' | 'v3' }) {
           </DialogContent>
         </Dialog>
         <ReferenceGallery />
+
+        <Snackbar
+          open={!!simToast}
+          autoHideDuration={2500}
+          onClose={() => setSimToast(null)}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+          sx={{ mt: 8 }}
+        >
+          <Alert severity="warning" variant="filled" sx={{ bgcolor: '#ff0032', color: '#ffffff', fontWeight: 700, '& .MuiAlert-icon': { color: '#ffffff' } }}>
+            {simToast}
+          </Alert>
+        </Snackbar>
+
+        <Snackbar
+          open={restoredCount > 0}
+          autoHideDuration={5000}
+          onClose={() => setRestoredCount(0)}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+          sx={{ mt: 8 }}
+        >
+          <Alert severity="info" sx={{ bgcolor: '#f1fdf6', color: '#19633d', border: '1px solid #06d373', fontWeight: 700 }}>
+            We restored your basket from your previous session ({restoredCount} {restoredCount === 1 ? 'seat' : 'seats'}).
+          </Alert>
+        </Snackbar>
       </Box>
     </ThemeProvider>
   );
