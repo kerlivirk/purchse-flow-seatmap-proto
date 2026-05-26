@@ -151,6 +151,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSector, allSeatsVisible]);
   const [focusedSeatId, setFocusedSeatId] = useState<string | null>(null);
+  const [hoveredSeatId, setHoveredSeatId] = useState<string | null>(null);
   const [hoveredSectorId, setHoveredSectorId] = useState<string | null>(null);
   const [dynamicReservedByOthers, setDynamicReservedByOthers] = useState<Set<string>>(new Set());
   const [flashSeats, setFlashSeats] = useState<Set<string>>(new Set());
@@ -431,7 +432,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
       <Typography variant="caption" color="text.secondary">Prototype codes: CREW, PRESS, PHANTOM</Typography>
       <Divider sx={{ my: 2, borderColor: '#e9e7ed' }} />
       <Typography fontWeight={800} sx={{ mb: 1 }}>Legend</Typography>
-      {[['Available', '#11002b'], ['Selected', '#06d373'], ['Sold / locked', '#a99db6'], ['Held by others', '#84738f'], ['Resale', '#ec4899']].map(([label, color]) => <Stack key={label} direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}><Box sx={{ width: 13, height: 13, borderRadius: '50%', bgcolor: color }} /><Typography variant="caption">{label}</Typography></Stack>)}
+      {[['Available', '#9d85d0'], ['Selected', '#06d373'], ['Taken (sold / held)', '#d4d4d8'], ['Resale', '#ec4899']].map(([label, color]) => <Stack key={label} direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}><Box sx={{ width: 13, height: 13, borderRadius: '50%', bgcolor: color }} /><Typography variant="caption">{label}</Typography></Stack>)}
     </>
   );
 
@@ -659,19 +660,33 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
                     const flashing = flashSeats.has(seat.id);
                     const isResale = seat.resale && seat.status === 'available' && !claimedByOther;
                     const effectivelyAvailable = seat.status === 'available' && !claimedByOther;
-                    const seatFill = flashing ? '#ff0032' : failed ? '#ef4444' : loading ? '#c084fc' : selected ? '#06d373' : seat.status === 'unavailable' ? '#a99db6' : claimedByOther ? '#84738f' : '#11002b';
+                    const isTaken = !effectivelyAvailable && !selected && !loading && !failed && !flashing;
+                    const seatFill = flashing ? '#ff0032' : failed ? '#ef4444' : loading ? '#c084fc' : selected ? '#06d373' : isTaken ? '#d4d4d8' : '#9d85d0';
                     const seatStroke = selected ? '#11002b' : isResale ? RESALE_COLOR : 'transparent';
+                    const hovered = hoveredSeatId === seat.id;
                     return (
                       <g
                         key={seat.id}
                         onClick={(e) => {
                           e.stopPropagation();
                           if (effectivelyAvailable) reserveSeat(seat);
+                          else setSnackbar('This seat is already taken');
                         }}
+                        onMouseEnter={() => setHoveredSeatId(seat.id)}
+                        onMouseLeave={() => setHoveredSeatId((s) => (s === seat.id ? null : s))}
                         style={{ cursor: effectivelyAvailable ? 'pointer' : 'not-allowed', transition: 'fill 200ms' }}
                       >
                         <circle cx={p.x} cy={p.y} r={selected ? 4.5 : 3.5} fill={seatFill} stroke={seatStroke} strokeWidth={isResale && !selected ? 1.2 : 1} />
+                        {isTaken && <line x1={p.x - 4} y1={p.y} x2={p.x + 4} y2={p.y} stroke="#84738f" strokeWidth="1.2" pointerEvents="none" />}
                         {flashing && <circle cx={p.x} cy={p.y} r="7" fill="none" stroke="#ff0032" strokeWidth="1.5" opacity="0.6" />}
+                        {(hovered || selected) && (
+                          <g pointerEvents="none">
+                            <rect x={p.x - 24} y={p.y - 26} width={48} height={16} rx={3} fill="#11002b" />
+                            <text x={p.x} y={p.y - 14} textAnchor="middle" fill="#ffffff" fontSize={11} fontWeight={800}>
+                              {seat.price} PLN
+                            </text>
+                          </g>
+                        )}
                       </g>
                     );
                   })}
@@ -699,17 +714,33 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
                   const flashing = flashSeats.has(seat.id);
                   const isResale = seat.resale && seat.status === 'available' && !claimedByOther;
                   const effectivelyAvailable = seat.status === 'available' && !claimedByOther;
-                  const seatFill = flashing ? '#ff0032' : failed ? '#ef4444' : loading ? '#c084fc' : selected ? '#06d373' : seat.status === 'unavailable' ? '#a99db6' : claimedByOther ? '#84738f' : '#11002b';
+                  const isTaken = !effectivelyAvailable && !selected && !loading && !failed && !flashing;
+                  const seatFill = flashing ? '#ff0032' : failed ? '#ef4444' : loading ? '#c084fc' : selected ? '#06d373' : isTaken ? '#d4d4d8' : '#9d85d0';
                   const seatStroke = selected ? '#11002b' : isResale ? RESALE_COLOR : 'transparent';
+                  const hovered = hoveredSeatId === seat.id;
                   return (
                     <g
                       key={seat.id}
-                      onClick={() => effectivelyAvailable && reserveSeat(seat)}
+                      onClick={() => {
+                        if (effectivelyAvailable) reserveSeat(seat);
+                        else setSnackbar('This seat is already taken');
+                      }}
+                      onMouseEnter={() => setHoveredSeatId(seat.id)}
+                      onMouseLeave={() => setHoveredSeatId((s) => (s === seat.id ? null : s))}
                       style={{ cursor: effectivelyAvailable ? 'pointer' : 'not-allowed', transition: 'fill 200ms' }}
                     >
                       <circle cx={p.x} cy={p.y} r={selected ? 7 : 6} fill={seatFill} stroke={seatStroke} strokeWidth={isResale && !selected ? 2 : 1.5} />
+                      {isTaken && <line x1={p.x - 6} y1={p.y} x2={p.x + 6} y2={p.y} stroke="#84738f" strokeWidth="1.5" pointerEvents="none" />}
                       {loading && <circle cx={p.x} cy={p.y} r="10" fill="none" stroke="#c084fc" strokeWidth="2" strokeDasharray="3 3"><animateTransform attributeName="transform" type="rotate" from={`0 ${p.x} ${p.y}`} to={`360 ${p.x} ${p.y}`} dur="1s" repeatCount="indefinite" /></circle>}
                       {flashing && <circle cx={p.x} cy={p.y} r="12" fill="none" stroke="#ff0032" strokeWidth="2" opacity="0.6" />}
+                      {(hovered || selected) && (
+                        <g pointerEvents="none">
+                          <rect x={p.x - 28} y={p.y - 30} width={56} height={18} rx={3} fill="#11002b" />
+                          <text x={p.x} y={p.y - 17} textAnchor="middle" fill="#ffffff" fontSize={12} fontWeight={800}>
+                            {seat.price} PLN
+                          </text>
+                        </g>
+                      )}
                     </g>
                   );
                 })}
@@ -777,12 +808,13 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
         const filtered = seatFiltered(seat);
         const claimedByOther = dynamicReservedByOthers.has(seat.id) || seat.status === 'reserved-by-other';
         const flashing = flashSeats.has(seat.id);
-        const fill = flashing ? '#ff0032' : failed ? '#ef4444' : loading ? '#c084fc' : selected ? '#f5f3ff' : seat.status === 'unavailable' ? '#3f3f46' : claimedByOther ? '#52525b' : filtered ? '#d4d4d8' : colors[seat.priceCategory];
         const isResale = seat.resale && !filtered && seat.status === 'available' && !claimedByOther;
         const isFocused = keyboardNav && focusedSeatId === seat.id;
         const effectivelyAvailable = !filtered && !claimedByOther && seat.status === 'available';
-        const stroke = isFocused ? '#11002b' : selected ? '#06d373' : failed ? '#fecaca' : isResale ? RESALE_COLOR : '#3f3f46';
-        const strokeWidth = isFocused ? 3 : isResale && !selected ? 2.5 : 2;
+        const isTaken = !filtered && !effectivelyAvailable && !selected && !loading && !failed && !flashing;
+        const fill = flashing ? '#ff0032' : failed ? '#ef4444' : loading ? '#c084fc' : selected ? '#06d373' : isTaken ? '#d4d4d8' : filtered ? '#d4d4d8' : '#9d85d0';
+        const stroke = isFocused ? '#11002b' : selected ? '#11002b' : failed ? '#fecaca' : isResale ? RESALE_COLOR : 'transparent';
+        const strokeWidth = isFocused ? 3 : isResale && !selected ? 2.5 : selected ? 2 : 1;
         return (
           <Tooltip
             key={seat.id}
@@ -790,17 +822,29 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
             arrow
           >
             <g
-              onClick={() => effectivelyAvailable && reserveSeat(seat)}
+              onClick={() => {
+                if (effectivelyAvailable) reserveSeat(seat);
+                else if (!filtered) setSnackbar('This seat is already taken');
+              }}
               aria-label={`${seat.sectorName} Row ${seat.row} Seat ${seat.number}, ${claimedByOther ? 'held by another user' : seat.status}, ${seat.price} PLN`}
               style={{ cursor: effectivelyAvailable ? 'pointer' : 'not-allowed', opacity: filtered ? 0.35 : 1, transition: 'fill 200ms' }}
             >
               {isFocused && <circle cx={seat.x} cy={seat.y} r={14} fill="none" stroke="#11002b" strokeWidth="1.5" strokeDasharray="3 2" />}
               <circle cx={seat.x} cy={seat.y} r={selected ? 11 : 9} fill={fill} stroke={stroke} strokeWidth={strokeWidth} />
+              {isTaken && <line x1={seat.x - 7} y1={seat.y} x2={seat.x + 7} y2={seat.y} stroke="#84738f" strokeWidth="2" pointerEvents="none" />}
               {flashing && <circle cx={seat.x} cy={seat.y} r={14} fill="none" stroke="#ff0032" strokeWidth="2" opacity="0.6" />}
               {isResale && <circle cx={seat.x + 7} cy={seat.y - 7} r="3" fill={RESALE_COLOR} stroke="white" strokeWidth="1" />}
               {loading && <circle cx={seat.x} cy={seat.y} r="15" fill="none" stroke="#c084fc" strokeWidth="2" strokeDasharray="5 5"><animateTransform attributeName="transform" type="rotate" from={`0 ${seat.x} ${seat.y}`} to={`360 ${seat.x} ${seat.y}`} dur="1s" repeatCount="indefinite" /></circle>}
               {seat.accessible && <text x={seat.x + 8} y={seat.y - 8} fill="#ddd6fe" fontSize="9">♿</text>}
               {seat.limitedView && <text x={seat.x - 14} y={seat.y - 8} fill="#fbbf24" fontSize="10">!</text>}
+              {selected && (
+                <g pointerEvents="none">
+                  <rect x={seat.x - 28} y={seat.y - 30} width={56} height={18} rx={3} fill="#11002b" />
+                  <text x={seat.x} y={seat.y - 17} textAnchor="middle" fill="#ffffff" fontSize={12} fontWeight={800}>
+                    {seat.price} PLN
+                  </text>
+                </g>
+              )}
             </g>
           </Tooltip>
         );

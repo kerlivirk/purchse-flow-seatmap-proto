@@ -111,10 +111,9 @@ export function FilterSidebar({ filters, onFiltersChange, matchingCount }: Props
       <Typography variant="caption" sx={{ fontWeight: 800, color: '#5a5062', letterSpacing: 0.5, display: 'block', mb: 0.75 }}>LEGEND</Typography>
       <Stack spacing={0.5}>
         {[
-          ['Available', '#11002b'],
+          ['Available', '#9d85d0'],
           ['Selected', '#06d373'],
-          ['Sold / locked', '#a99db6'],
-          ['Held by others', '#84738f'],
+          ['Taken (sold / held)', '#d4d4d8'],
           ['Resale', '#ec4899'],
         ].map(([label, color]) => (
           <Stack key={label as string} direction="row" spacing={1} alignItems="center">
