@@ -1689,35 +1689,55 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
               left: 0,
               right: 0,
               bottom: 0,
-              height: listSheetExpanded ? '70%' : 108,
+              height: listSheetExpanded ? '70%' : 84,
               bgcolor: '#ffffff',
               borderTop: '1px solid #e9e7ed',
               boxShadow: '0 -8px 24px rgba(17,0,43,0.08)',
               zIndex: 6,
               display: 'flex',
               flexDirection: 'column',
-              overflow: 'hidden',
+              overflow: 'visible',
               transition: 'height 240ms ease',
               borderTopLeftRadius: 16,
               borderTopRightRadius: 16,
             }}
           >
-            {/* Drag handle + expand toggle — full-width tappable strip */}
-            <Stack
-              direction="row"
-              alignItems="center"
+            {/* Floating "Show seats" pill — straddles the drawer's top edge so it's an
+                obvious affordance whether the drawer is peeked or expanded */}
+            <Box
+              role="button"
+              tabIndex={0}
               onClick={() => setListSheetExpanded((v) => !v)}
-              sx={{ position: 'relative', height: 32, flexShrink: 0, cursor: 'pointer', px: 1.25 }}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setListSheetExpanded((v) => !v); }}
+              aria-label={listSheetExpanded ? 'Hide seat list' : 'Show all seats'}
+              sx={{
+                position: 'absolute',
+                top: -18,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                height: 36,
+                px: 1.75,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 0.75,
+                bgcolor: '#11002b',
+                color: '#ffffff',
+                borderRadius: 100,
+                boxShadow: '0 6px 16px rgba(17,0,43,0.22), 0 1px 2px rgba(17,0,43,0.12)',
+                cursor: 'pointer',
+                zIndex: 2,
+                fontWeight: 800,
+                fontSize: 12,
+                letterSpacing: 0.4,
+                whiteSpace: 'nowrap',
+                transition: 'background-color 150ms',
+                '&:hover': { bgcolor: '#2a1850' },
+                '&:active': { transform: 'translateX(-50%) translateY(1px)' },
+              }}
             >
-              <Box sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: '#c1bacb', position: 'absolute', left: '50%', top: 6, transform: 'translateX(-50%)' }} />
-              <Typography sx={{ fontWeight: 800, fontSize: 11, color: '#11002b', letterSpacing: 0.4, mt: 0.75 }}>
-                {listSheetExpanded ? 'HIDE LIST' : 'SHOW ALL ROWS'}
-              </Typography>
-              <Box sx={{ flex: 1 }} />
-              <IconButton size="small" sx={{ mt: 0.5, color: '#11002b' }} aria-label={listSheetExpanded ? 'Collapse list' : 'Expand list'}>
-                <Icon name={listSheetExpanded ? 'tailless-line-arrow-down-5' : 'tailless-line-arrow-up-5'} size={14} color="#11002b" />
-              </IconButton>
-            </Stack>
+              <Icon name={listSheetExpanded ? 'tailless-line-arrow-down-5' : 'tailless-line-arrow-up-5'} size={14} color="#ffffff" />
+              {listSheetExpanded ? 'HIDE SEATS' : 'SHOW ALL SEATS'}
+            </Box>
 
             {/* Sector chips strip — always visible so users see all sections without scrolling */}
             <Stack
@@ -1726,7 +1746,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
               sx={{
                 px: 1,
                 pb: 0.75,
-                pt: 0,
+                pt: 2.25,
                 flexShrink: 0,
                 overflowX: 'auto',
                 overflowY: 'hidden',
