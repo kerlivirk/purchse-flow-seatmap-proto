@@ -1,0 +1,21 @@
+{
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "editor.formatOnSave": false,
+  "editor.tabSize": 2,
+  "files.eol": "\n",
+  "files.exclude": {
+    "**/.DS_Store": true,
+    "dist": true,
+    ".vercel": true
+  },
+  "search.exclude": {
+    "node_modules": true,
+    "dist": true,
+    "proto-bundle.txt": true,
+    "package-lock.json": true
+  },
+  "tailwindCSS.experimental.classRegex": [
+    ["sx=\\{[^}]*className:\\s*\"([^\"]*)\"", "\"([^\"]*)\""]
+  ]
+}
