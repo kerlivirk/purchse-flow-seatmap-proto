@@ -1022,8 +1022,10 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
                 </text>
               </>
             )}
-            {/* Resale dot: positioned at the top-right of either the bbox (path) or the local rect */}
-            {match.resale > 0 && !disabled && !noMatches && (
+            {/* Resale dot: signals "section has resale tickets" before the user zooms in.
+                Hidden on v4 because the seats themselves are already visible with pink
+                resale strokes, which makes the section-level dot redundant. */}
+            {match.resale > 0 && !disabled && !noMatches && !allSeatsVisible && (
               sector.path
                 ? <circle cx={sector.x + sector.width - 14} cy={sector.y + 14} r={fanLayout ? 10 : 7} fill={RESALE_COLOR} stroke="white" strokeWidth="2" />
                 : <circle cx={sector.width - 18} cy={18} r="7" fill={RESALE_COLOR} stroke="white" strokeWidth="2" />
