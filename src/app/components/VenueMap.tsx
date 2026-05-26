@@ -1689,7 +1689,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
               left: 0,
               right: 0,
               bottom: 0,
-              height: listSheetExpanded ? '70%' : 88,
+              height: listSheetExpanded ? '70%' : 108,
               bgcolor: '#ffffff',
               borderTop: '1px solid #e9e7ed',
               boxShadow: '0 -8px 24px rgba(17,0,43,0.08)',
@@ -1702,13 +1702,22 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
               borderTopRightRadius: 16,
             }}
           >
-            {/* Drag handle + expand toggle — full width tap target */}
-            <Box
+            {/* Drag handle + expand toggle — full-width tappable strip */}
+            <Stack
+              direction="row"
+              alignItems="center"
               onClick={() => setListSheetExpanded((v) => !v)}
-              sx={{ position: 'relative', height: 16, flexShrink: 0, cursor: 'pointer' }}
+              sx={{ position: 'relative', height: 32, flexShrink: 0, cursor: 'pointer', px: 1.25 }}
             >
               <Box sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: '#c1bacb', position: 'absolute', left: '50%', top: 6, transform: 'translateX(-50%)' }} />
-            </Box>
+              <Typography sx={{ fontWeight: 800, fontSize: 11, color: '#11002b', letterSpacing: 0.4, mt: 0.75 }}>
+                {listSheetExpanded ? 'HIDE LIST' : 'SHOW ALL ROWS'}
+              </Typography>
+              <Box sx={{ flex: 1 }} />
+              <IconButton size="small" sx={{ mt: 0.5, color: '#11002b' }} aria-label={listSheetExpanded ? 'Collapse list' : 'Expand list'}>
+                <Icon name={listSheetExpanded ? 'tailless-line-arrow-down-5' : 'tailless-line-arrow-up-5'} size={14} color="#11002b" />
+              </IconButton>
+            </Stack>
 
             {/* Sector chips strip — always visible so users see all sections without scrolling */}
             <Stack
