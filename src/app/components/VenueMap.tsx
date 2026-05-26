@@ -1541,14 +1541,23 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
                 ) : (
                   <rect x={gridLayout ? 220 : 250} y={gridLayout ? 30 : 58} width={gridLayout ? 460 : 400} height={gridLayout ? 50 : 58} rx="8" fill="#11002b" />
                 )}
-                {/* Sector thumbnails */}
-                {visibleSectors.map((sector) => (
-                  sector.path ? (
+                {/* Sector thumbnails — selected sector is fully opaque with a stroke,
+                    the rest are dimmed so users instantly see where they are */}
+                {visibleSectors.map((sector) => {
+                  const isFocused = selectedSector?.id === sector.id;
+                  const dim = selectedSector && !isFocused;
+                  const baseFill = sector.path
+                    ? (sector.id === 'mezzanine' ? '#7b5aa8' : sector.id === 'orchestra' || sector.id === 'balcony' ? '#9d85d0' : '#5a5062')
+                    : colors[sector.priceCategory];
+                  const opacity = isFocused ? 1 : dim ? 0.22 : 0.85;
+                  return sector.path ? (
                     <path
                       key={sector.id}
                       d={sector.path}
-                      fill={sector.id === 'mezzanine' ? '#7b5aa8' : sector.id === 'orchestra' || sector.id === 'balcony' ? '#9d85d0' : '#5a5062'}
-                      opacity={0.85}
+                      fill={baseFill}
+                      opacity={opacity}
+                      stroke={isFocused ? '#11002b' : 'none'}
+                      strokeWidth={isFocused ? 14 : 0}
                     />
                   ) : (
                     <rect
@@ -1559,11 +1568,13 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
                       height={sector.height}
                       rx={gridLayout ? 14 : 12}
                       transform={sector.rotation ? `rotate(${sector.rotation} ${sector.x + sector.width / 2} ${sector.y + sector.height / 2})` : undefined}
-                      fill={colors[sector.priceCategory]}
-                      opacity={0.85}
+                      fill={baseFill}
+                      opacity={opacity}
+                      stroke={isFocused ? '#11002b' : 'none'}
+                      strokeWidth={isFocused ? 8 : 0}
                     />
-                  )
-                ))}
+                  );
+                })}
                 {/* Viewport indicator */}
                 {(() => {
                   const vbCanvasW = fanLayout ? 1280 : 900;
@@ -1671,7 +1682,6 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
           v3: visible only when a sector is zoomed in, contains the single-sector list */}
       {isMobile && allSeatsVisible && (() => {
         const fanSectors = sectorsV3.filter((s) => !s.locked && (s as V3Sector).seatsBBox);
-        const totalAvailable = fanSectors.reduce((sum, s) => sum + (matchingBySector[s.id]?.available ?? 0), 0);
         return (
           <Box
             sx={{
@@ -1679,7 +1689,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
               left: 0,
               right: 0,
               bottom: 0,
-              height: listSheetExpanded ? '70%' : 56,
+              height: listSheetExpanded ? '70%' : 88,
               bgcolor: '#ffffff',
               borderTop: '1px solid #e9e7ed',
               boxShadow: '0 -8px 24px rgba(17,0,43,0.08)',
@@ -1692,27 +1702,72 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
               borderTopRightRadius: 16,
             }}
           >
+            {/* Drag handle + expand toggle — full width tap target */}
+            <Box
+              onClick={() => setListSheetExpanded((v) => !v)}
+              sx={{ position: 'relative', height: 16, flexShrink: 0, cursor: 'pointer' }}
+            >
+              <Box sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: '#c1bacb', position: 'absolute', left: '50%', top: 6, transform: 'translateX(-50%)' }} />
+            </Box>
+
+            {/* Sector chips strip — always visible so users see all sections without scrolling */}
             <Stack
               direction="row"
-              spacing={1}
-              alignItems="center"
-              onClick={() => setListSheetExpanded((v) => !v)}
-              sx={{ px: 1.5, py: 1, cursor: 'pointer', flexShrink: 0, position: 'relative' }}
+              spacing={0.75}
+              sx={{
+                px: 1,
+                pb: 0.75,
+                pt: 0,
+                flexShrink: 0,
+                overflowX: 'auto',
+                overflowY: 'hidden',
+                WebkitOverflowScrolling: 'touch',
+                scrollbarWidth: 'none',
+                '&::-webkit-scrollbar': { display: 'none' },
+              }}
             >
-              <Box sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: '#c1bacb', position: 'absolute', left: '50%', top: 4, transform: 'translateX(-50%)' }} />
-              <Box sx={{ flex: 1, minWidth: 0, pt: 0.75 }}>
-                <Typography sx={{ fontWeight: 800, fontSize: 13, lineHeight: 1.15 }} noWrap>
-                  {selectedSector ? selectedSector.name : 'All tickets'}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {totalAvailable} tickets · {fanSectors.length} sections
-                </Typography>
-              </Box>
-              <IconButton size="small" sx={{ flexShrink: 0 }} aria-label={listSheetExpanded ? 'Collapse list' : 'Expand list'}>
-                <Icon name={listSheetExpanded ? 'tailless-line-arrow-down-5' : 'tailless-line-arrow-up-5'} size={16} color="#11002b" />
-              </IconButton>
+              {fanSectors.map((s) => {
+                const accent = s.id === 'mezzanine' ? '#7b5aa8' : '#9d85d0';
+                const isActive = selectedSector?.id === s.id;
+                const avail = matchingBySector[s.id]?.available ?? 0;
+                return (
+                  <Box
+                    key={s.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => { e.stopPropagation(); openSector(s); }}
+                    sx={{
+                      flex: '1 1 0',
+                      minWidth: 92,
+                      px: 1,
+                      py: 0.75,
+                      borderRadius: 2,
+                      border: '1px solid',
+                      borderColor: isActive ? accent : '#e9e7ed',
+                      bgcolor: isActive ? `${accent}1F` : '#ffffff',
+                      cursor: 'pointer',
+                      transition: 'all 150ms',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Stack direction="row" spacing={0.5} alignItems="center" sx={{ minWidth: 0 }}>
+                      <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: accent, flexShrink: 0 }} />
+                      <Typography sx={{ fontWeight: 800, fontSize: 12, lineHeight: 1.1, color: '#11002b' }} noWrap>
+                        {s.name}
+                      </Typography>
+                    </Stack>
+                    <Typography variant="caption" sx={{ fontWeight: 700, fontSize: 10, color: '#5a5062', lineHeight: 1.1 }} noWrap>
+                      {avail} · from {s.startingPrice} PLN
+                    </Typography>
+                  </Box>
+                );
+              })}
             </Stack>
-            <Box sx={{ flex: 1, minHeight: 0, display: listSheetExpanded ? 'block' : 'none', overflow: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
+
+            {/* Expanded list */}
+            <Box sx={{ flex: 1, minHeight: 0, display: listSheetExpanded ? 'block' : 'none', overflow: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', borderTop: '1px solid #e9e7ed' }}>
               {fanSectors.map((s) => {
                 const accent = s.id === 'mezzanine' ? '#7b5aa8' : '#9d85d0';
                 const sectorSeats = (selectedSector?.id === s.id ? seats : generateSeats(s)).filter((seat) => !seatFiltered(seat));
