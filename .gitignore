@@ -35,3 +35,6 @@ Thumbs.db
 coverage
 .cache
 .vercel
+
+# packer output (regenerate with `npm run pack`)
+proto-bundle.txt
