@@ -432,7 +432,20 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
       <Typography variant="caption" color="text.secondary">Prototype codes: CREW, PRESS, PHANTOM</Typography>
       <Divider sx={{ my: 2, borderColor: '#e9e7ed' }} />
       <Typography fontWeight={800} sx={{ mb: 1 }}>Legend</Typography>
-      {[['Available', '#9d85d0'], ['Selected', '#06d373'], ['Taken (sold / held)', '#d4d4d8'], ['Resale', '#ec4899']].map(([label, color]) => <Stack key={label} direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}><Box sx={{ width: 13, height: 13, borderRadius: '50%', bgcolor: color }} /><Typography variant="caption">{label}</Typography></Stack>)}
+      {[
+        { label: 'Available', fill: '#06d373' },
+        { label: 'Selected', fill: '#ec4899' },
+        { label: 'Taken (sold / held)', fill: '#d4d4d8', strike: true },
+        { label: 'Resale', fill: '#06d373', ring: '#ec4899' },
+      ].map(({ label, fill, ring, strike }) => (
+        <Stack key={label} direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}>
+          <Box sx={{ position: 'relative', width: 13, height: 13, flexShrink: 0 }}>
+            <Box sx={{ width: 13, height: 13, borderRadius: '50%', bgcolor: fill, border: ring ? `2px solid ${ring}` : 'none', boxSizing: 'border-box' }} />
+            {strike && <Box sx={{ position: 'absolute', inset: 0, m: 'auto', width: 15, height: '2px', bgcolor: '#84738f', transform: 'rotate(45deg)' }} />}
+          </Box>
+          <Typography variant="caption">{label}</Typography>
+        </Stack>
+      ))}
     </>
   );
 
@@ -661,7 +674,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
                     const isResale = seat.resale && seat.status === 'available' && !claimedByOther;
                     const effectivelyAvailable = seat.status === 'available' && !claimedByOther;
                     const isTaken = !effectivelyAvailable && !selected && !loading && !failed && !flashing;
-                    const seatFill = flashing ? '#ff0032' : failed ? '#ef4444' : loading ? '#c084fc' : selected ? '#06d373' : isTaken ? '#d4d4d8' : '#9d85d0';
+                    const seatFill = flashing ? '#ff0032' : failed ? '#ef4444' : loading ? '#c084fc' : selected ? '#ec4899' : isTaken ? '#d4d4d8' : '#06d373';
                     const seatStroke = selected ? '#11002b' : isResale ? RESALE_COLOR : 'transparent';
                     const hovered = hoveredSeatId === seat.id;
                     return (
@@ -677,7 +690,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
                         style={{ cursor: effectivelyAvailable ? 'pointer' : 'not-allowed', transition: 'fill 200ms' }}
                       >
                         <circle cx={p.x} cy={p.y} r={selected ? 4.5 : 3.5} fill={seatFill} stroke={seatStroke} strokeWidth={isResale && !selected ? 1.2 : 1} />
-                        {isTaken && <line x1={p.x - 4} y1={p.y} x2={p.x + 4} y2={p.y} stroke="#84738f" strokeWidth="1.2" pointerEvents="none" />}
+                        {isTaken && <line x1={p.x - 4} y1={p.y - 4} x2={p.x + 4} y2={p.y + 4} stroke="#84738f" strokeWidth="1.2" pointerEvents="none" />}
                         {flashing && <circle cx={p.x} cy={p.y} r="7" fill="none" stroke="#ff0032" strokeWidth="1.5" opacity="0.6" />}
                         {(hovered || selected) && (
                           <g pointerEvents="none">
@@ -715,7 +728,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
                   const isResale = seat.resale && seat.status === 'available' && !claimedByOther;
                   const effectivelyAvailable = seat.status === 'available' && !claimedByOther;
                   const isTaken = !effectivelyAvailable && !selected && !loading && !failed && !flashing;
-                  const seatFill = flashing ? '#ff0032' : failed ? '#ef4444' : loading ? '#c084fc' : selected ? '#06d373' : isTaken ? '#d4d4d8' : '#9d85d0';
+                  const seatFill = flashing ? '#ff0032' : failed ? '#ef4444' : loading ? '#c084fc' : selected ? '#ec4899' : isTaken ? '#d4d4d8' : '#06d373';
                   const seatStroke = selected ? '#11002b' : isResale ? RESALE_COLOR : 'transparent';
                   const hovered = hoveredSeatId === seat.id;
                   return (
@@ -730,7 +743,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
                       style={{ cursor: effectivelyAvailable ? 'pointer' : 'not-allowed', transition: 'fill 200ms' }}
                     >
                       <circle cx={p.x} cy={p.y} r={selected ? 7 : 6} fill={seatFill} stroke={seatStroke} strokeWidth={isResale && !selected ? 2 : 1.5} />
-                      {isTaken && <line x1={p.x - 6} y1={p.y} x2={p.x + 6} y2={p.y} stroke="#84738f" strokeWidth="1.5" pointerEvents="none" />}
+                      {isTaken && <line x1={p.x - 6} y1={p.y - 6} x2={p.x + 6} y2={p.y + 6} stroke="#84738f" strokeWidth="1.5" pointerEvents="none" />}
                       {loading && <circle cx={p.x} cy={p.y} r="10" fill="none" stroke="#c084fc" strokeWidth="2" strokeDasharray="3 3"><animateTransform attributeName="transform" type="rotate" from={`0 ${p.x} ${p.y}`} to={`360 ${p.x} ${p.y}`} dur="1s" repeatCount="indefinite" /></circle>}
                       {flashing && <circle cx={p.x} cy={p.y} r="12" fill="none" stroke="#ff0032" strokeWidth="2" opacity="0.6" />}
                       {(hovered || selected) && (
@@ -812,7 +825,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
         const isFocused = keyboardNav && focusedSeatId === seat.id;
         const effectivelyAvailable = !filtered && !claimedByOther && seat.status === 'available';
         const isTaken = !filtered && !effectivelyAvailable && !selected && !loading && !failed && !flashing;
-        const fill = flashing ? '#ff0032' : failed ? '#ef4444' : loading ? '#c084fc' : selected ? '#06d373' : isTaken ? '#d4d4d8' : filtered ? '#d4d4d8' : '#9d85d0';
+        const fill = flashing ? '#ff0032' : failed ? '#ef4444' : loading ? '#c084fc' : selected ? '#ec4899' : isTaken ? '#d4d4d8' : filtered ? '#d4d4d8' : '#06d373';
         const stroke = isFocused ? '#11002b' : selected ? '#11002b' : failed ? '#fecaca' : isResale ? RESALE_COLOR : 'transparent';
         const strokeWidth = isFocused ? 3 : isResale && !selected ? 2.5 : selected ? 2 : 1;
         return (
@@ -831,7 +844,7 @@ export const VenueMap = forwardRef<MapHandle, VenueMapProps>(function VenueMap(
             >
               {isFocused && <circle cx={seat.x} cy={seat.y} r={14} fill="none" stroke="#11002b" strokeWidth="1.5" strokeDasharray="3 2" />}
               <circle cx={seat.x} cy={seat.y} r={selected ? 11 : 9} fill={fill} stroke={stroke} strokeWidth={strokeWidth} />
-              {isTaken && <line x1={seat.x - 7} y1={seat.y} x2={seat.x + 7} y2={seat.y} stroke="#84738f" strokeWidth="2" pointerEvents="none" />}
+              {isTaken && <line x1={seat.x - 7} y1={seat.y - 7} x2={seat.x + 7} y2={seat.y + 7} stroke="#84738f" strokeWidth="2" pointerEvents="none" />}
               {flashing && <circle cx={seat.x} cy={seat.y} r={14} fill="none" stroke="#ff0032" strokeWidth="2" opacity="0.6" />}
               {isResale && <circle cx={seat.x + 7} cy={seat.y - 7} r="3" fill={RESALE_COLOR} stroke="white" strokeWidth="1" />}
               {loading && <circle cx={seat.x} cy={seat.y} r="15" fill="none" stroke="#c084fc" strokeWidth="2" strokeDasharray="5 5"><animateTransform attributeName="transform" type="rotate" from={`0 ${seat.x} ${seat.y}`} to={`360 ${seat.x} ${seat.y}`} dur="1s" repeatCount="indefinite" /></circle>}

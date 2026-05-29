@@ -111,13 +111,16 @@ export function FilterSidebar({ filters, onFiltersChange, matchingCount }: Props
       <Typography variant="caption" sx={{ fontWeight: 800, color: '#5a5062', letterSpacing: 0.5, display: 'block', mb: 0.75 }}>LEGEND</Typography>
       <Stack spacing={0.5}>
         {[
-          ['Available', '#9d85d0'],
-          ['Selected', '#06d373'],
-          ['Taken (sold / held)', '#d4d4d8'],
-          ['Resale', '#ec4899'],
-        ].map(([label, color]) => (
-          <Stack key={label as string} direction="row" spacing={1} alignItems="center">
-            <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: color as string }} />
+          { label: 'Available', fill: '#06d373' },
+          { label: 'Selected', fill: '#ec4899' },
+          { label: 'Taken (sold / held)', fill: '#d4d4d8', strike: true },
+          { label: 'Resale', fill: '#06d373', ring: '#ec4899' },
+        ].map(({ label, fill, ring, strike }) => (
+          <Stack key={label} direction="row" spacing={1} alignItems="center">
+            <Box sx={{ position: 'relative', width: 12, height: 12, flexShrink: 0 }}>
+              <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: fill, border: ring ? `2px solid ${ring}` : 'none', boxSizing: 'border-box' }} />
+              {strike && <Box sx={{ position: 'absolute', inset: 0, m: 'auto', width: 14, height: '2px', bgcolor: '#84738f', transform: 'rotate(45deg)' }} />}
+            </Box>
             <Typography variant="caption" color="text.secondary">{label}</Typography>
           </Stack>
         ))}
